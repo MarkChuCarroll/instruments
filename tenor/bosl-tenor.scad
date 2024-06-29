@@ -66,7 +66,7 @@ module body(size, thickness, split = false) {
         }
       }
     }
-    translate([ size * 1.2, 0, thickness * 0.85 ]) rotate([ 0, 180, 90 ]) {
+    translate([ size * 1.2 + 4, 0, thickness * 0.8 ]) rotate([ 0, 180, 90 ]) {
       difference() {
         linear_extrude(thickness, scale = [ 1.5, 1 ], center = false) {
           translate([ -radius, 0, 0 ]) { square([ radius * 2, length / 2 ]); }
@@ -80,7 +80,7 @@ module body(size, thickness, split = false) {
   union() {
     difference() {
       body_shape(size, thickness);
-      scale([ 0.9, 0.9, 0.9 ]) { body_shape(size, thickness); }
+      scale([ 0.9, 0.9, 0.8 ]) { body_shape(size, thickness); }
 
       move([ size / 2, -size / 2, -thickness * 2 ]) {
         scale([ 1.4, 1.0, 1.0 ]) { cylinder(size, size / 4, size / 4); }
@@ -95,11 +95,17 @@ module body(size, thickness, split = false) {
     if (split) {
       screwblock(neck_width * 2 / 6, 50, 45);
     }
-    //  translate([ -230, 0, 10 ])
+
 
     up(thickness / 3) left(size * 1.2) tapered_tailpiece(
         neck_width, neck_width / 4, neck_width / 2, neck_width / 6);
-  }
+
+
+// internal bracing
+down(8) color("#ff0000")  prismoid([10,170], [10,120], 8);
+zrot(90) down(8) color("#ff0000")  prismoid([10,200], [10,150], 8);
+}
+
 }
 
 /*
@@ -258,48 +264,13 @@ module neck(offset, length, width, thickness, scale, solid = false) {
     }
   }
 
-  /**
-   * The nut at the top of the neck. The height of the nut might need
-   * to be tweaked to adjust the string action.
-   */
-  module nut(width, height, thickness, offset) {
-    module string_notch(width, depth, elev) {
-      translate([ 10, 0, -elev ]) {
-        rotate([ -90, 0, 90 ]) {
-          linear_extrude(20) {
-            polygon([ [ -width / 2, 0 ], [ width / 2, 0 ], [ 0, -depth ] ],
-                    [[ 0, 1, 2 ]]);
-          }
-        }
-      }
-    }
-
-    translate([ 0, width / 2, 0 ]) {
-      difference() {
-        rotate([ 0, 180, 180 ]) {
-          linear_extrude(thickness, scale = [ 0.7, 1.0 ]) {
-            square([ height, width ]);
-          }
-        }
-
-        // String notches
-        dist = (width - 2 * offset) / 3;
-        for (str = [0:3]) {
-          translate([ 0, -offset - (dist * str), 0 ]) {
-            string_notch(width = 2, depth = 3, elev = 10);
-          }
-        }
-      }
-    }
-  }
-
   translate([ 100, 0, 0 ]) union() {
     difference() {
       // First, we have main body of the neck, joined with the headstock and
       // heel.
       union() {
         neck_blank(thickness, length);
-        translate([ length - 10, 0, 12 ]) headstock(length, width, thickness);
+        translate([ length - 10, 0, 14 ]) headstock(length, width, thickness);
         heel(width / 3, 50, 50, !solid);
       }
 
@@ -309,9 +280,41 @@ module neck(offset, length, width, thickness, scale, solid = false) {
         trussrod_cutout(length, width);
       }
     }
+  }
+}
 
-    // and finally, we add the nut.
-    translate([ length - 4, 0, 0 ]) nut(width, width / 9, width / 5, width / 9);
+/**
+ * The nut at the top of the neck. The height of the nut might need
+ * to be tweaked to adjust the string action.
+ */
+module nut(width, height, thickness, offset) {
+  module string_notch(width, depth, elev) {
+    translate([ 10, 0, -elev ]) {
+      rotate([ -90, 0, 90 ]) {
+        linear_extrude(20) {
+          polygon([ [ -width / 2, 0 ], [ width / 2, 0 ], [ 0, -depth ] ],
+                  [[ 0, 1, 2 ]]);
+        }
+      }
+    }
+  }
+
+  translate([ 0, width / 2, 0 ]) {
+    difference() {
+      rotate([ 0, 180, 180 ]) {
+        linear_extrude(thickness, scale = [ 0.7, 1.0 ]) {
+          square([ height, width ]);
+        }
+      }
+
+      // String notches
+      dist = (width - 2 * offset) / 3;
+      for (str = [0:3]) {
+        translate([ 0, -offset - (dist * str), 0 ]) {
+          string_notch(width = 2, depth = 3, elev = 10);
+        }
+      }
+    }
   }
 }
 
@@ -401,12 +404,15 @@ module tenor_guitar(size = 80, separated = false, make_body = true,
         neck(100, neck_length_mm - neck_offset, neck_width, neck_thickness,
              18 * 25.4);
       }
+      left(neck_length_mm + 100) back(400)
+          translate([ neck_length_mm - 4, 0, -15 ])
+              nut(neck_width, neck_width / 9, neck_width / 5, neck_width / 9);
     }
 
     if (make_fingerboard) {
       fwd(fingerboard_layout_offset) translate([ 100, -neck_width / 2, -22 ])
           color("#00FFFF") fingerboard(neck_length_mm - neck_offset - 4,
-                                       neck_width - 5, 18 * 25.4, 20);
+                                       neck_width, 18 * 25.4, 20);
     }
 
     if (make_bridge) {
@@ -491,6 +497,7 @@ neck_offset = 100;
 neck_thickness = 30;
 neck_width = 50;
 
-tenor_guitar(80);
-// tenor_guitar(80, separated = true, make_fingerboard = false, make_neck =
-// false, make_bridge = false);
+tenor_guitar(80, separated = true,
+
+make_fingerboard=false, make_neck=false, make_bridge=false
+);
