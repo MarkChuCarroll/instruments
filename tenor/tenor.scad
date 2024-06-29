@@ -13,13 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// I want a a teardrop shaped body. SCAD can do that that by making two
-// cylinders with offset centers, and then taking their hull. We get
-// a bit of slant by making the larger cylinder actually a bit conic,
-// but square up at the heel because the smaller is a true cylinder.
-// Then we round the edges by using minkowski sum with a little sphere.
-module body_form(length, thickness) {
-  // 0-point is the body top where the neck meets the body.
+
+
+/**
+ * The body is teardrop shaped. It's built by setting up two
+ * cylinders, one smaller than teh other, with offset centers,
+ * and then taking their hull. We add a bit of slant by making
+ * the larger cylinder actually a bit conic, but square up at
+ * the heel because the smaller is a true cylinder.
+ * Then we round the edges by using minkowski sum with a little sphere.
+ */
+module body_shape(length, thickness) {
+  // Anchoris the body top where the neck meets the body.
   //  translate([ 130, 0, -5 ])
   translate([ -130, 0, 5 ]) minkowski() {
     hull() {
@@ -39,13 +44,63 @@ module body_form(length, thickness) {
  */
 module body(size, thickness) {
   difference() {
-    body_form(size, thickness);
+    body_shape(size, thickness);
     translate([ -3, -3, 3 ]) {
-      scale([ 0.9, 0.9, 0.9 ]) { body_form(size, thickness); }
+      scale([ 0.9, 0.9, 0.9 ]) { body_shape(size, thickness); }
     }
     translate([ -size * 5 / 4, -size / 2, -thickness / 2 ]) {
       scale([ 1.3, 1.0, 1.0 ]) { cylinder(thickness, size / 4, size / 4); }
     }
+  }
+}
+
+/**
+ * I want to put cutouts for hex nuts into the screw block.
+ * For an m4 hex nut, the size flat-to-flat is 7mm.
+ * So the rough outer radius of the hexnut is 5mm.
+ */
+module hexnut_slot() {
+  rotate([ 90, 0, 0 ]) {
+    rotate([ 0, 0, 30 ]) {
+      union() {
+        translate([ 0, 0, 20 ]) {
+          cylinder(40, 2.4, 2.4, center = true, $fn = 20);
+        }
+        linear_extrude(height = 3) { circle(5, $fn = 6); }
+      }
+    }
+  }
+}
+
+module separated_body() {
+  /**
+   * The screwblock is a section matching the back end of the neck's heel block,
+   * which has holes and hex-nute slots to allow the neck to be securely
+   * bolted on to the body.
+   */
+  module screwblock(radius, length, thickness) {
+    translate([ 0, 0, thickness ]) rotate([ 0, 180, 90 ]) {
+      difference() {
+        linear_extrude(thickness, scale = [ 1.5, 1 ], center = false) {
+          translate([ -radius, 0, 0 ]) { square([ radius * 2, length / 2 ]); }
+        }
+        translate([ 0, length / 2, 8 ]) hexnut_slot();
+        translate([ 0, length / 2, 20 ]) hexnut_slot();
+      }
+    }
+  }
+
+  union() {
+    difference() {
+      body(80, 30);
+      translate([ -45, 0, -10 ]) {
+        solid_neck(100, neck_length_mm - neck_offset, neck_width,
+                   neck_thickness, 18 * 25.4);
+      }
+    }
+    translate([ -45, 0, -5 ]) screwblock(neck_width * 2 / 6, 50, 45);
+    translate([ -230, 0, 10 ]) tapered_tailpiece(
+        neck_width, neck_width / 4, neck_width / 2, neck_width / 6);
   }
 }
 
@@ -64,8 +119,58 @@ module half_cylinder(radius, length) {
   }
 }
 
-// The nut at the top of the neck. The height of the nut might need
-// to be tweaked to adjust the string action.
+module neck_blank(thickness, length) {
+  scale([ 1, 1.3, 1.2 ]) { half_cylinder(thickness * 2 / 3, length); }
+}
+
+module trussrod_cutout(length, neckwidth) {
+  union() {
+    translate([ 0, -1 / 8 * 25.4, -20 ])
+        cube([ length + 20, (1 / 4) * 25.4, 25.4 * (3 / 8) + 20 ]);
+
+    translate([ length, 0, 0 ]) {
+      rotate([ 0, 90, 0 ]) {
+        scale([ 1, 1.5, 1 ]) cylinder(40, neckwidth / 6, neckwidth / 8);
+      }
+    }
+  }
+}
+
+module heel(radius, length, thickness, drill = true) {
+  translate([ 2 * radius, 0, thickness ]) difference() {
+    rotate([ 0, 180, 90 ]) {
+      difference() {
+        linear_extrude(thickness, scale = [ 1.5, 2.0 ], center = false) {
+          circle(radius);
+          translate([ -radius, 0, 0 ]) { square(radius * 2, thickness); }
+        }
+        translate([ -radius * 2, radius * 2, 0 ]) {
+          cube([ radius * 4, radius * 3, thickness ]);
+        }
+      }
+    }
+    if (drill) {
+      translate([ -35, 0, -8 ]) {
+        rotate([ 0, 90, 0 ]) { cylinder(60, 2.4, 2.4, $fn = 20); }
+      }
+      translate([ 10, 0, -8 ]) {
+        rotate([ 0, 90, 0 ]) { cylinder(30, 4, 4); }
+      }
+
+      translate([ -35, 0, -20 ]) {
+        rotate([ 0, 90, 0 ]) { cylinder(60, 2.4, 2.4, $fn = 20); }
+      }
+      translate([ 10, 0, -20 ]) {
+        rotate([ 0, 90, 0 ]) { cylinder(30, 4, 4); }
+      }
+    }
+  }
+}
+
+/**
+ * The nut at the top of the neck. The height of the nut might need
+ * to be tweaked to adjust the string action.
+ */
 module nut(width, height, thickness, offset) {
   module string_notch(width, depth, elev) {
     translate([ 10, 0, -elev ]) {
@@ -115,13 +220,16 @@ module headstock(length, width, thickness) {
       rotate([ 0, 0, 45 ]) square([ diam, diam ], center = true);
     }
   }
-  module head_shape(x, y, z) {
+  module head_shape(x, z) {
     rotate([ 0, 0, 90 ]) {
       linear_extrude(z) {
         oct(x);
         translate([ 0, 3 * x / 4, 0 ]) { oct(x); }
       }
     }
+    // for the area where the head meets the neck joint,
+    // we create one half of an octagon, and hull it
+    // with a cylinder
     translate([ -x * 3 / 4, 0, 0 ]) {
       hull() {
         translate([ -x / 2, 0, thickness / 3 + thickness / 6 ])
@@ -144,7 +252,7 @@ module headstock(length, width, thickness) {
         difference() {  // create the basic head shape, and then drill holes
                         // into it for the tuners. The tuners that I'm using
                         // require 10mm holes.
-          head_shape(width * 1.5, width * 0.6, thickness / 2);
+          head_shape(width * 1.5, thickness / 2);
           // The x=5 here is totally pragmatic:  I thought it would be
           // -width/2, but in practice, that just wasn't the right location - it
           // wasn't centered properly, but adding a 5mm translation fixed it.
@@ -164,88 +272,10 @@ module headstock(length, width, thickness) {
 }
 
 /**
- * The fingerboard, with fret slots cut into it. Personally,
- * I prefer to use real metal fret wire for frets, so instead of
- * shaping frets into the pattern, I cut out slots to insert fret
- * wire.
+ * A solid version of the neck, without boltholes in it.
+ * This is used for creating the cutout in the body
+ * for mounting a separately printed neck.
  */
-module fingerboard(length, width, scale, num_frets) {
-  // given a scale length L, fret N is positioned
-  // L/(2^1/12) from the bridge.
-  C = 2 ^ (1 / 12);
-  function fret_position(L, n) = L / (C ^ n);
-  function fret_distance(L, n) = fret_position(L, n);
-  color("#0000ff") {
-    difference() {
-      cube([ length, width, 4 ]);
-
-      for (i = [1:num_frets]) {
-        translate([ fret_distance(length + 100, i) - 100, -width / 2, -2 ]) {
-          cube([ 1, 100, 4 ]);
-        }
-      }
-    }
-  }
-}
-
-module trussrod_cutout(length, neckwidth) {
-  union() {
-    translate([ 0, -1 / 8 * 25.4, -20 ])
-        cube([ length + 20, (1 / 4) * 25.4, 25.4 * (3 / 8) + 20 ]);
-
-    translate([ length, 0, 0 ]) {
-      rotate([ 0, 90, 0 ]) {
-        scale([ 1, 1.5, 1 ]) cylinder(40, neckwidth / 6, neckwidth / 8);
-      }
-    }
-  }
-}
-
-module neck_blank(thickness, length) {
-  scale([ 1, 1.3, 1.2 ]) { half_cylinder(thickness * 2 / 3, length); }
-}
-
-module heel(radius, length, thickness, drill = true) {
-  // Finding the anchor:
-  // we start with circular area using the radius. We keep
-  // half of the circle, and then stretch the whole shebang
-  // by a factor of 1.5 in width, and 2.0 in length.
-  // Then we start at the center of the circle, and move back
-  // by 2 radii, and cut it off there.
-  // so the position should be 2 radii from the center of
-  // the circular base.
-  translate([ 2 * radius, 0, thickness ])
-
-      difference() {
-    rotate([ 0, 180, 90 ]) {
-      difference() {
-        linear_extrude(thickness, scale = [ 1.5, 2.0 ], center = false) {
-          circle(radius);
-          translate([ -radius, 0, 0 ]) { square(radius * 2, thickness); }
-        }
-        translate([ -radius * 2, radius * 2, 0 ]) {
-          cube([ radius * 4, radius * 3, thickness ]);
-        }
-      }
-    }
-    if (drill) {
-      translate([ -35, 0, -8 ]) {
-        rotate([ 0, 90, 0 ]) { cylinder(60, 2.4, 2.4, $fn = 20); }
-      }
-      translate([ 10, 0, -8 ]) {
-        rotate([ 0, 90, 0 ]) { cylinder(30, 4, 4); }
-      }
-
-      translate([ -35, 0, -20 ]) {
-        rotate([ 0, 90, 0 ]) { cylinder(60, 2.4, 2.4, $fn = 20); }
-      }
-      translate([ 10, 0, -20 ]) {
-        rotate([ 0, 90, 0 ]) { cylinder(30, 4, 4); }
-      }
-    }
-  }
-}
-
 module solid_neck(offset, length, width, thickness, scale) {
   union() {
     union() {
@@ -296,19 +326,26 @@ module neck(offset, length, width, thickness, scale) {
   }
 }
 
-module tailpiece(width, thickness, depth, border) {
-  difference() {
-    minkowski() {
-      cube([ depth, width, 10 ], center = true);
-      sphere(depth / 10);
-    }
-    hole_zone = width - 2 * border;
-    hole_sep = hole_zone / 3;
-    for (s = [0:3]) {
-      pos = (-hole_zone / 2) + (s * hole_sep);
-      translate([ -(depth / 3), pos, -20 ]) {
-        cylinder(40, 2, 2);
-        translate([ -depth / 4, 0, 0 ]) { cylinder(40, 2, 2); }
+/**
+ * The fingerboard, with fret slots cut into it. Personally,
+ * I prefer to use real metal fret wire for frets, so instead of
+ * shaping frets into the pattern, I cut out slots to insert fret
+ * wire.
+ */
+module fingerboard(length, width, scale, num_frets) {
+  // given a scale length L, fret N is positioned
+  // L/(2^1/12) from the bridge.
+  C = 2 ^ (1 / 12);
+  function fret_position(L, n) = L / (C ^ n);
+  function fret_distance(L, n) = fret_position(L, n);
+  color("#0000ff") {
+    difference() {
+      cube([ length, width, 4 ]);
+
+      for (i = [1:num_frets]) {
+        translate([ fret_distance(length + 100, i) - 100, -width / 2, -2 ]) {
+          cube([ 1, 100, 4 ]);
+        }
       }
     }
   }
@@ -354,44 +391,7 @@ module assembled() {
                                                neck_width / 2, neck_width / 6);
 }
 
-module screwblock(radius, length, thickness) {
-  translate([ 0, 0, thickness ]) rotate([ 0, 180, 90 ]) {
-    difference() {
-      linear_extrude(thickness, scale = [ 1.5, 1 ], center = false) {
-        translate([ -radius, 0, 0 ]) { square([ radius * 2, length / 2 ]); }
-      }
-      translate([ 0, length / 2, 8 ]) hexnut_slot();
-      translate([ 0, length / 2, 20 ]) hexnut_slot();
-
-      //        translate([ -radius * 2, radius * 2, 0 ]) {
-      // cube([ radius * 4, radius * 3, thickness ]);
-      //}
-      //}
-    }
-  }
-}
-
 module pieces() {
-  module separated_body() {
-    // A section matching the back end of the neck's heel block, which can be
-    // used for gluing the neck into the body. Eventually I want to put a hole
-    // into the heel, and mount a matching hex-nut in the screwblock for a
-    // bolt-on neck.
-
-    union() {
-      difference() {
-        body(80, 30);
-        translate([ -45, 0, -10 ]) {
-          solid_neck(100, neck_length_mm - neck_offset, neck_width,
-                     neck_thickness, 18 * 25.4);
-        }
-      }
-      translate([ -45, 0, -5 ]) screwblock(neck_width * 2 / 6, 50, 45);
-      translate([ -230, 0, 10 ]) tapered_tailpiece(
-          neck_width, neck_width / 4, neck_width / 2, neck_width / 6);
-    }
-  }
-
   separated_body();
   translate([ 0, 200, 0 ]) {
     neck(100, neck_length_mm - neck_offset, neck_width, neck_thickness,
@@ -402,49 +402,16 @@ module pieces() {
   }
 }
 
-// I want a scale length of about 18 inches.
-// The bridge should be about 3 inches from the tail - so body_form
-// from bridge to neck will be about 5 3/4 inches, leaving us a
-// neck length of 12 1/4 inches.
+/**
+ * I want a scale length of about 18 inches.
+ * The bridge should be about 3 inches from the tail - so the
+ * body from bridge to neck will be about 5 3/4 inches, leaving us a
+ * neck length of 12 1/4 inches.
+ */
 neck_length_mm = 18 * 25.4;
 neck_offset = 100;
 neck_thickness = 30;
 neck_width = 50;
 
-// pieces();
-assembled();
-//  screwblock(neck_width * 2 / 6, 50, 50);
-//   solid_neck(100, neck_length_mm - neck_offset, neck_width, neck_thickness,
-//   18 * 25.4);
-
-// we want to put cutouts for hex nuts into the screw block.
-// For an m4 hex nut, the size flat-to-flat is 7mm.
-//
-// We need the radius of the enclosing circle.
-//
-// We can look at a hexagon as 6 equilateral triangles arranged
-// radially. In those triangles, the hypotenuse is the radius
-// of the circle, and the flats are 2x the shorter leg. The
-// distance between the flats is 2x the longer leg.
-//
-// In an equilateral triangle, the hypotenuse is 2x the
-// length of the shorter leg, and sqrt(3)x the longer.
-//
-// So: the long leg is 3.5mm; that means the radius is 6.06mm.
-// Giving it a bit of slack, 6.5mm should work.
-//
-//
-module hexnut_slot() {
-  rotate([ 90, 0, 0 ]) {
-    rotate([ 0, 0, 30 ]) {
-      union() {
-        translate([ 0, 0, 20 ]) {
-          cylinder(40, 2.4, 2.4, center = true, $fn = 20);
-        }
-        linear_extrude(height = 3) { circle(4.95, $fn = 6); }
-      }
-    }
-  }
-}
-
-// difference() { screwblock(neck_width * 2 / 6, 20, 50); }
+ assembled();
+//pieces();
