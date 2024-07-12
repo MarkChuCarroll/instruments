@@ -66,8 +66,7 @@ module body(size, thickness, split = false) {
         }
       }
     }
-    color("#0000ff") translate([ size * 1.2 + 14, 0, thickness * 0.8 ])
-        rotate([ 0, 180, 90 ]) {
+    translate([ size * 1.2 + 14, 0, thickness * 0.8 ]) rotate([ 0, 180, 90 ]) {
       difference() {
         linear_extrude(thickness, scale = [ 1.5, 1 ], center = false) {
           translate([ -radius, 0, 0 ]) { square([ radius * 2, length / 2 ]); }
@@ -95,11 +94,23 @@ module body(size, thickness, split = false) {
     screwblock(neck_width * 2 / 6, 20, 45);
 
     up(thickness / 3) left(size * 1.2) tapered_tailpiece(
-        neck_width, neck_width / 4, neck_width / 2, neck_width / 6);
+        neck_width, neck_width / 4, neck_width / 1.5, neck_width / 6);
+    color("#ff00ff") translate([ -108, 0, -8 ]) rotate([ 0, 70, 0 ])
+        cuboid([ 2, neck_width * 1.2, 12 ], chamfer = 1);
 
     // internal bracing
-    down(9) color("#ff0000") prismoid([ 10, 170 ], [ 10, 120 ], 6);
-    zrot(90) down(9) color("#ff0000") prismoid([ 10, 200 ], [ 10, 150 ], 6);
+    // CF rod is 1/8x3/8 - which is 3.175mmx9.525mm. Adding a bit of space
+    // so that it can be slid in, we can make a slot that's 3.5mmx10mm.
+    difference() {
+      union() {
+        down(9) color("#ff0000") prismoid([ 10, 165 ], [ 10, 120 ], 6);
+        zrot(90) down(9) fwd(100) left(6) cube([ 12, 200, 15 ]);
+      }
+      zrot(90) down(7) fwd(95) left(3.5 / 2) cube([ 3.5, 190, 10 ]);
+
+      // prismoid([ 12, 200 ], [ 10, 150 ], 15);
+      // prismoid([ 3.5, 200 ], [ 3.5, 150 ], 10);
+    }
   }
 }
 
@@ -592,7 +603,8 @@ module split_body(size, neck = true, tail = true) {
         rotate([ 0, 45, 0 ]) translate([ -size * 3 / 16, -100, -100 ])
             cube([ 200, 200, 300 ]);
       }
-      translate([ -20, 0, -6 ]) rotate([ 0, -90, 0 ]) cylinder(8, 1.8, 2.5);
+      //      translate([ -20, 0, -6 ]) rotate([ 0, -90, 0 ])
+      //      cylinder(8, 1.8, 2.5);
       translate([ -20, -80, -6 ]) rotate([ 0, -90, 0 ]) cylinder(8, 1.8, 2.5);
       translate([ -20, 80, -6 ]) rotate([ 0, -90, 0 ]) cylinder(8, 1.8, 2.5);
       translate([ 20, -63, 35 ]) rotate([ 0, -90, 0 ]) cylinder(8, 1.8, 2.5);
@@ -699,6 +711,5 @@ if (AUTO) {
     tenor_guitar(80);
   }
 } else {
-  split_neck(neck_offset, scale, neck_width, heel = false);
-  // split_body(80, tail = false);
+  split_body(80, neck = false);
 }
