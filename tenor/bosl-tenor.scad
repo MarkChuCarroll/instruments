@@ -230,7 +230,7 @@ module neck(offset, scale, width, solid = false) {
     module head_shape(width, thickness) {
       rotate([ 0, 0, 90 ]) {
         union() {
-          back(10) left(10) down() mark(width / 4, 2);
+          back(10) left(10) down(2) mark(width / 4, 4);
           linear_extrude(thickness) {
             oct(width);
             translate([ 0, 3 * width / 4, 0 ]) { oct(width); }
