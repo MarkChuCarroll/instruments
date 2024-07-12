@@ -17,7 +17,7 @@ include <BOSL2/std.scad>
 
 /**
  * The body is teardrop shaped. It's built by setting up two
- * cylinders, one smaller than teh other, with offset centers,
+ * cylinders, one smaller than the other, with offset centers,
  * and then taking their hull. We add a bit of slant by making
  * the larger cylinder actually a bit conic, but square up at
  * the heel because the smaller is a true cylinder.
@@ -158,21 +158,21 @@ module neck(offset, scale, width, solid = false) {
       // The trussrod gets a little bit wider at the top, where the
       // screw mechanism is, so we need to broaden the cutout just
       // a little bit.
-      translate([ length - 25, -three_eighths_inch / 2, -20 ]) {
-        cube([ 25, three_eighths_inch, three_eighths_inch + 20 ]);
+      translate([ length - 45, -three_eighths_inch / 2, -18 ]) {
+        cube([ 45, three_eighths_inch, three_eighths_inch + 22 ]);
       }
       // And to reduce stress concentration, add a transition
       // between the wider and narrower parts.
-      translate([ length - 25.4 + 1, 0, -0.5 ]) {
+      translate([ length - 45 + 1, 0, -0.5 ]) {
         color("#008888") rotate([ 0, -90, 0 ])
-            prismoid(size1 = [ 20, three_eighths_inch ],
+            prismoid(size1 = [ 29, three_eighths_inch ],
 
                      size2 = [ 20, one_quarter_inch ], h = three_eighths_inch);
       }
 
-      translate([ length, 0, 0 ]) {
+      translate([ length, 0, 4 ]) {
         rotate([ 0, 90, 0 ]) {
-          scale([ 1, 1.5, 1 ]) cylinder(40, neckwidth / 6, neckwidth / 8);
+          scale([ 1.2, 1.6, 1.0 ]) cylinder(40, neckwidth / 5, neckwidth / 8);
         }
       }
     }
@@ -230,7 +230,7 @@ module neck(offset, scale, width, solid = false) {
     module head_shape(width, thickness) {
       rotate([ 0, 0, 90 ]) {
         union() {
-          back(10) left(10) down(3) color("#ff00ff") mark(width / 4, 4);
+          back(10) left(10) down() mark(width / 4, 2);
           linear_extrude(thickness) {
             oct(width);
             translate([ 0, 3 * width / 4, 0 ]) { oct(width); }
@@ -404,7 +404,7 @@ module fingerboard(length, width, scale, num_frets) {
 }
 
 module split_fingerboard(length, width, scale, num_frets, head = true,
-                         tail = true) {
+                         heel = true) {
   module heel_with_studs() {
     union() {
       difference() {
@@ -429,9 +429,12 @@ module split_fingerboard(length, width, scale, num_frets, head = true,
     }
   }
 
-  heel_with_studs();
-
-  translate([ 20, 0, 0 ]) { head_with_sockets(); }
+  if (heel) {
+    heel_with_studs();
+  }
+  if (head) {
+    translate([ 20, 0, 0 ]) { head_with_sockets(); }
+  }
 }
 
 module tapered_tailpiece(width, thickness, depth, border) {
@@ -494,7 +497,7 @@ module tenor_guitar(size = 80, separated = false, make_body = true,
       fwd(neck_layout_offset) translate([ 0, 0, -18 ]) {
         neck(neck_offset, scale, neck_width);
       }
-      left(scale + 100) back(400) translate([ scale - 4, 0, -15 ])
+      translate([ scale + 5, 0, -18 ])
           nut(neck_width, neck_width / 9, neck_width / 5, neck_width / 9);
     }
 
@@ -696,7 +699,6 @@ if (AUTO) {
     tenor_guitar(80);
   }
 } else {
-  // tenor_guitar(80, separated = true);
+  split_neck(neck_offset, scale, neck_width, heel = false);
   // split_body(80, tail = false);
-  split_fingerboard(scale - neck_offset, neck_width, scale, 20);
 }

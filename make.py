@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 import subprocess
 
 
-parts = ["neck_head", "neck_heel", "body_neck", "body_tail",
+parts = ["all", "neck_head", "neck_heel", "body_neck", "body_tail",
          "fb_head", "fb_heel", "bridge"]
 
 
@@ -14,5 +14,8 @@ def main():
 
     for i in range(1, 8):
         print(f"Generating {opts.prefix}-{parts[i]}.stl")
-        subprocess.check_call(f"openscad", "-DAUTO=true", "-Dmake_part={i}", "-o", f"{opts.prefix}-{parts[i]}.stl" "bosl-tenor.scad")
+        subprocess.check_call(["openscad", "-DAUTO=true", f"-Dmake_part={i}", "-o", f"{opts.prefix}-{parts[i]}.stl", "tenor/bosl-tenor.scad"])
 
+
+if __name__ == "__main__":
+    main()
