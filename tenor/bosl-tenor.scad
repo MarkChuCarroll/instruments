@@ -103,7 +103,7 @@ module body(size, thickness, split = false) {
     // so that it can be slid in, we can make a slot that's 3.5mmx10mm.
     difference() {
       union() {
-        down(9) color("#ff0000") prismoid([ 10, 165 ], [ 10, 120 ], 6);
+o        down(9) color("#ff0000") prismoid([ 10, 165 ], [ 10, 120 ], 6);
         zrot(90) down(9) fwd(100) left(6) cube([ 12, 200, 15 ]);
       }
       zrot(90) down(7) fwd(95) left(3.5 / 2) cube([ 3.5, 190, 10 ]);
@@ -339,11 +339,19 @@ module nut(width, height, thickness, offset) {
 
       // String notches
       dist = (width - 2 * offset) / 3;
-      for (str = [0:3]) {
-        translate([ 0, -offset - (dist * str), 0 ]) {
-          string_notch(width = 2, depth = 3, elev = 10);
+        translate([ 0, -offset - (dist * 0), 0 ]) {
+          string_notch(width = 2, depth = 3, elev = thickness + 1.0);
         }
-      }
+        translate([ 0, -offset - (dist * 1), 0 ]) {
+          string_notch(width = 2, depth = 3, elev = thickness + 0.5);
+        }
+        translate([ 0, -offset - (dist * 2), 0 ]) {
+          string_notch(width = 2, depth = 3, elev = thickness );
+        }
+        translate([ 0, -offset - (dist * 3), 0 ]) {
+          string_notch(width = 2, depth = 3, elev = thickness );
+        }
+
     }
   }
 }
@@ -470,9 +478,12 @@ module bridge(width, height) {
   translate([ 0, 0, -height * 2 ]) {
     difference() {
       union() {
-        linear_extrude(height, scale = [ 3, 1.3 ], center = false) {
+        // main section
+        color("#ff0000")
+            linear_extrude(height, scale = [ 3, 1.3 ], center = false) {
           square([ 2, neck_width ], center = true);
         }
+        // 3 bottom foot/wedges
         up(height / 2)
             prismoid(size1 = [ 2, 2 ], size2 = [ 15, 2 ], height = height / 2);
         fwd(width / 2.2) up(height / 2)
@@ -482,15 +493,17 @@ module bridge(width, height) {
             prismoid(size1 = [ 2, 2 ], size2 = [ 15, 2 ], height = height / 2);
       }
 
+      fwd(width / 4) up(height) zrot(90) yrot(180)
+          prismoid([ width / 4, height ], [ width / 8, height ], height * 0.6);
+
+      back(width / 4) up(height) zrot(90) yrot(180)
+          prismoid([ width / 4, height ], [ width / 8, height ], height * 0.6);
+
       edge = width / 5;
       dist = (width - 2 * edge) / 3;
       for (n = [0:3]) {
         back(width / 2 - (edge + n * dist)) prismoid([ 5, 1.5 ], [ 5, .75 ], 1);
       }
-      fwd(width / 4) up(height) zrot(90) yrot(180)
-          prismoid([ width / 3, height / 2 ], [ width / 8, height / 2 ], 10);
-      back(width / 4) up(height) zrot(90) yrot(180)
-          prismoid([ width / 3, height / 2 ], [ width / 8, height / 2 ], 10);
     }
   }
 }
@@ -674,7 +687,7 @@ scale = 18 * 25.4;
 neck_offset = 100;
 neck_width = 40;
 
-AUTO = false;
+AUTO = true;
 ALL = 0;
 NECK_HEAD = 1;
 NECK_HEEL = 2;
@@ -683,9 +696,10 @@ BODY_TAIL = 4;
 FINGERBOARD_HEAD = 5;
 FINGERBOARD_HEEL = 6;
 BRIDGE = 7;
+NUT = 8;
 
 // For driving this from the command line:
-make_part = ALL;
+make_part = NUT;
 
 if (AUTO) {
   if (make_part == ALL) {
@@ -706,7 +720,13 @@ if (AUTO) {
     split_fingerboard(scale - neck_offset, neck_width, scale, 20, head = false,
                       heel = true);
   } else if (make_part == BRIDGE) {
-    bridge(neck_width, 17);
+    bridge(neck_width, 14);
+    translate([ 50, 0, 0 ]) { bridge(neck_width, 12); }
+    translate([ 100, 0, 0 ]) { bridge(neck_width, 11); }
+  } else if (make_part == NUT) {
+    nut(neck_width, neck_width / 9.0, neck_width / 6.0, neck_width / 9.0);
+    translate([ 50, 0, 0 ])
+        nut(neck_width, neck_width / 9.0, neck_width / 7.0, neck_width / 9.0);
   } else {
     tenor_guitar(80);
   }
