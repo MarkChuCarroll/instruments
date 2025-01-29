@@ -4,62 +4,55 @@ let inch_mm = 25.4
 
 fun body(length: Float, thickness: Float): Solid {
     fun base_shape(length: Float, thickness: Float): Solid {
-        (cylinder(thickness, length, length *3.0 / 4.0)->scale(1.3, 1.0, 1.0) +
-            cylinder(thickness, length/2.0)->move(length, 0.0, 0.0))->hull()
+        (cylinder(thickness, length, length * 3.0 / 4.0)->scale(1.3, 1.0, 1.0) +
+            cylinder(thickness, length/2.0, length/2.0)->move(length, 0.0, 0.0))->hull()
     }
 
     fun sound_hole(): Solid {
-         cylinder(thickness, length/5.0)->scale(1.5, 1.0, 1.0)->move(length/3.0, -length/2.0 , -thickness/2.0)
+         cylinder(thickness, length/5.0, length/5.0)->scale(1.5, 1.0, 1.0)->move(length/3.0, -length/2.0 , -thickness/2.0)
     }
 
     fun bracing(brace_length: Float, brace_width: Float, brace_height: Float): Solid {
-        let brace_slot = brick(brace_length, brace_width, brace_height)
+        let brace_slot = cuboid(brace_length, brace_width, brace_height)
         let wrapper = brace_slot->scale(1.0, 1.5, 1.5)
 
-        let hb_slice = rectangle(brace_width, length*0.8, true)
-        let horiz_half = hb_slice->extrude(brace_height, 50, v2(0.8, 0.8))
-        let horiz = horiz_half + horiz_half->mirror(v3(0.0, 1.0, 0.0))
+        let hb_slice = rect(brace_width, length*0.8, 1 == 1)
+        let horiz_half = hb_slice->extrude(v3(0.0, 0.0, 1.0), brace_height)
+        let horiz = horiz_half + horiz_half->mirror(v3(0.0, 0.0, 0.0), v3(0.0, 1.0, 0.0))
 
 
         wrapper + horiz->move(-20.0, 0.0, -10.0) - brace_slot
-    }
-
-
-  let shape = base_shape(length, thickness)
-  let compound = shape + shape->scale(0.9, 0.9, 1.0)->move(0.0, 0.0, -thickness*0.1)
-  let outer = compound->hull()
-  let inner = compound->scale(0.9, 0.9, 0.9)
-  let full = outer - inner - sound_hole() + bracing(180.0, 3.5, 10.0)->move(20.0, 0.0, 5.0)
+   }
+   let shape = base_shape(length, thickness)
+   let compound = shape + shape->scale(0.9, 0.9, 1.0)->move(0.0, 0.0, -thickness*0.1)
+   let inner = compound->scale(0.9, 0.9, 0.9)
+   let outer = compound->hull()
+   outer - inner - sound_hole() + bracing(180.0, 3.5, 10.0)->move(20.0, 0.0, 5.0)
 }
 
-fun split_body(full: Solid): [Solid] {
-  full->split_by_plane(v3(-1.0, 0.0, 1.0), 10.0)
-
-}
 
 fun neck(scale: Float, offset: Float, width: Float): Solid {
     fun half_cyl(length: Float, radius: Float): Solid {
-        let r = (cylinder(length, radius)->split_by_plane(v3(0.0, 1.0, 0.0), 0.0))
-        r[0]
+        cylinder(length, radius, radius) - brick(length, radius, radius)
      }
 
      half_cyl(scale - offset, width)->scale(1.0, 0.7, 1.0)
 }
 
 fun headstock(length: Float, width: Float, thickness: Float): Solid {
-    fun oct(diam: Float): Slice {
-        let x = rectangle(diam, diam)
+    fun oct(diam: Float): Polygon {
+        let x = rect(diam, diam)
         x->intersect(x->rotate(45.0))
     }
-    let o = oct(width)->extrude(thickness, 10)
+    let o = oct(width)->extrude(v3(0.0, 0.0, 10.0))
     o + o->move(width * 0.75, 0.0, 0.0)
 }
 
 
 produce("body") {
-   let b = split_body(body(100.0, 50.0))
-b[0]
-b[1]->move(20.0, 0.0, 0.0)
+   body(100.0, 50.0)
+//   b[0]
+//   b[1]->move(20.0, 0.0, 0.0)
 }
 
 
