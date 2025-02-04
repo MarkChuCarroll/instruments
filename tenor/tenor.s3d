@@ -1,6 +1,17 @@
  // TODO: fix local functions
 let inch_mm = 25.4
 
+fun half(shape: Solid): Solid {
+   let bounds = shape->bounds()
+   let xsize = bounds->max()->x() - bounds->min()->x()
+   let ysize = bounds->max()->y() - bounds->min()->y()
+   let zsize = bounds->max()->z() - bounds->min()->z()
+
+
+   let cut = cuboid(xsize, ysize, zsize)->move(0.0, ysize/2.0, 0.0)
+   shape - cut
+}
+
 
 fun body(length: Float, thickness: Float): Solid {
     fun base_shape(length: Float, thickness: Float): Solid {
@@ -32,33 +43,50 @@ fun body(length: Float, thickness: Float): Solid {
 
 
 fun neck(scale: Float, offset: Float, width: Float): Solid {
-    fun half_cyl(length: Float, radius: Float): Solid {
-        cylinder(length, radius, radius) - brick(length, radius, radius)
-     }
-
-     half_cyl(scale - offset, width)->scale(1.0, 0.7, 1.0)
-}
-
-fun headstock(length: Float, width: Float, thickness: Float): Solid {
     fun oct(diam: Float): Polygon {
-        let x = rect(diam, diam)
-        x->intersect(x->rotate(45.0))
+        let sqrt2 = 2.0 ^ (0.5)
+        let r = diam / 2.0
+        let rsqrt = r / sqrt2
+        //   ul,
+        polygon([v3(-rsqrt, rsqrt, 0.0),  v3(-r, 0.0, 0.0), v3(-rsqrt, -rsqrt, 0.0), v3(0.0, -r, 0.0),
+        v3(rsqrt, -rsqrt, 0.0), v3(r, 0.0, 0.0),  v3(rsqrt, rsqrt, 0.0),  v3(0.0, r, 0.0)])
     }
-    let o = oct(width)->extrude(v3(0.0, 0.0, 10.0))
-    o + o->move(width * 0.75, 0.0, 0.0)
+
+
+    fun headstock(width: Float, thickness: Float): Solid {
+        let o = oct(width*0.8)->extrude(v3(0.0, 0.0, thickness))
+        let ext = cuboid(width, width /2.0, thickness * 0.8)
+        let cyl = cylinder(width/2.0, width/12.0, width/12.0)->rotate(90.0, 0.0, 90.0)->move(-width, 0.0, width/24.0 + 2.0)
+        let r = (o + o->move(width * 0.70, 0.0, 0.0))->move(-width/2.5, 0.0, 0.0) + ext->move(-width/2.0, 0.0, thickness/2.0) + cyl
+        r
+    }
+
+
+    fun heel(radius: Float, length: Float, thickness: Float): Solid {
+        let shape: Solid = cylinder(1.0, radius, radius)->move(-radius, 0.0, 0.0) + cuboid(radius * 2.0, radius*2.0, 1.0)
+        let offset = length /4.0
+        let result = (shape->scale(2.0, 1.5, 1.0)->move(-offset, 0.0, thickness) + shape)->hull()
+        result->rotate(90.0, 0.0, -90.0)
+    }
+
+
+     let length = scale - offset
+     let main =  half(cylinder(length, width/2.0, width/2.0))->scale(1.0, 0.7, 1.0)
+     let head =  headstock(width*2.0, width/3.0)->rotate(70.0, 0.0, 90.0)->move(0.0, -width, length/2.0 + width * 1.8)
+     let tail = heel(width/3.0, 50.0, 55.0)
+     main + head + tail->move(0.0, -55.0, -length/2.0)
 }
+
 
 
 produce("body") {
    body(100.0, 50.0)
-//   b[0]
-//   b[1]->move(20.0, 0.0, 0.0)
 }
 
 
 
 produce("neck") {
-  // neck(24.0 * inch_mm, 100.0, 35.0)
-  headstock(24.0 * inch_mm, 80.0, 20.0)
+  let width = 35.0
+  neck(24.0 * inch_mm, width, width)
 
 }

@@ -23,28 +23,31 @@ include <BOSL2/std.scad>
  * the heel because the smaller is a true cylinder.
  * Then we round the edges by using minkowski sum with a little sphere.
  */
-module body_shape(length, thickness) {
-  // Anchoris the body top where the neck meets the body.
-  //  translate([ 130, 0, -5 ])
-  //  minkowski() {
-  module outline() {
-    hull() {
-      scale([ 1.3, 1, 1 ]) { cylinder(thickness + 10, length, length * 3 / 4); }
-      translate([ length, 0, 0 ]) {
-        cylinder(thickness + 10, length / 2, length / 2);
+
+module body(size, thickness, split = false) {
+  module body_shape(length, thickness) {
+    // Anchoris the body top where the neck meets the body.
+    //  translate([ 130, 0, -5 ])
+    //  minkowski() {
+    module outline() {
+      hull() {
+        scale([ 1.3, 1, 1 ]) {
+          cylinder(thickness + 10, length, length * 3 / 4);
+        }
+        translate([ length, 0, 0 ]) {
+          cylinder(thickness + 10, length / 2, length / 2);
+        }
+      }
+    }
+
+    translate([ 0, 0, -5 ]) {
+      hull() {
+        outline();
+        translate([ 0, 0, -10 ]) scale([ 0.9, 0.9, 0.9 ]) outline();
       }
     }
   }
 
-  translate([ 0, 0, -5 ]) {
-    hull() {
-      outline();
-      translate([ 0, 0, -10 ]) scale([ 0.9, 0.9, 0.9 ]) outline();
-    }
-  }
-}
-
-module body(size, thickness, split = false) {
   /**
    * The screwblock is a section matching the back end of the neck's heel
    * block, which has holes and hex-nut slots to allow the neck to be
@@ -68,64 +71,75 @@ module body(size, thickness, split = false) {
         }
       }
     }
-    translate([ size * 1.2 + 14, 0, thickness * 0.8 + 5 ]) rotate([ 0, 180, 90 ]) {
+
+    // positions for the holes are 8mm from the base of the neck heel,
+    // and 25mm from the base of the neck heel.
+    // The neck heal is ??? mm off the bottom of the body.
+    translate([ size * 1.2 + 14, 0, thickness * 0.8 + 5 ])
+        rotate([ 0, 180, 90 ]) {
+      elev = thickness * 0.8 + 5 + 1;
+
       difference() {
         linear_extrude(thickness + 11, scale = [ 1.5, 1 ], center = false) {
-          translate([ -radius, 0, 0 ]) { square([ radius * 2 , length / 2 ]); }
+          translate([ -radius, 0, 0 ]) { square([ radius * 2, length / 2 ]); }
         }
-        translate([ 0, length / 2, 16.8 ]) hexnut_slot();
-        translate([ 0, length / 2, 28.8 ]) hexnut_slot();
+        // formerly 16.8 and 28.8
+        translate([ 0, length / 2, elev - 8 ]) hexnut_slot();
+        translate([ 0, length / 2, elev - 25 ]) hexnut_slot();
       }
     }
   }
 
-  union() {
-    /**
-     * We want the body to be hollow. So what we do is create
-     * one copy of the body  form, and then a second scaled version that's a bit
-     * smaller - and we subtract the smaller one from the larger.
-     */
-      
-    difference() {
-      body_shape(size, thickness);
-      translate([ 0, 0, 1 ]) {
-        scale([ 0.9, 0.9, 0.9 ]) { body_shape(size, thickness); }
+  module assembly() {
+    union() {
+      /**
+       * We want the body to be hollow. So what we do is create
+       * one copy of the body  form, and then a second scaled version that's a
+       * bit smaller - and we subtract the smaller one from the larger.
+       */
+
+      difference() {
+        body_shape(size, thickness);
+        translate([ 0, 0, 1 ]) {
+          scale([ 0.9, 0.9, 0.9 ]) { body_shape(size, thickness); }
+        }
+
+        // cut out the sound-hole.
+        // TODO: don't cut so far down; it's cutting into the body side.
+        move([ size / 2.0 - 5, -size / 2 + 5, -thickness / 2 ]) {
+          scale([ 1.4, 1.0, 1.0 ]) { cylinder(size / 4, size / 4, size / 4); }
+        }
+
+        translate([ 0, 0, -20 ]) neck(neck_offset, scale, neck_width, true);
       }
 
-      // cut out the sound-hole.
-      // TODO: don't cut so far down; it's cutting into the body side.
-      move([ size /2.0 -5 , -size / 2+5, -thickness/2 ]) {
-        scale([ 1.4, 1.0, 1.0 ]) { cylinder(size/4, size / 4, size / 4); }
+      translate([ -20, 0, 0 ]) screwblock(neck_width * 2 / 6, 20, 45);
+
+      // and the tailpiece.
+      up(thickness / 3) left(size * 1.1) tapered_tailpiece(
+          neck_width, neck_width / 4, neck_width / 1.5, neck_width / 6);
+
+      // The string guide over the tailpiece.
+      color("#ff00ff") translate([ -size * 1.25, 0, -12 ]) rotate([ 0, 45, 0 ])
+          cuboid([ 2, neck_width * 1.2, 14 ], chamfer = 1);
+
+      // internal bracing
+      // CF rod is 1/8x3/8 - which is 3.175mmx9.525mm. Adding a bit of space
+      // so that it can be slid in, we can make a slot that's 3.5mmx10mm.
+      difference() {
+        union() {
+          down(12) color("#ff0000") prismoid([ 10, 155 ], [ 10, 120 ], 6);
+          zrot(90) down(12) fwd(100) left(6) cube([ 12, 200, 15 ]);
+        }
+        zrot(90) down(7) fwd(95) left(3.5 / 2) cube([ 3.5, 190, 10 ]);
+
+        // prismoid([ 12, 200 ], [ 10, 150 ], 15);
+        // prismoid([ 3.5, 200 ], [ 3.5, 150 ], 10);
       }
-      
-      translate([ 0, 0, -20 ]) neck(neck_offset, scale, neck_width, true);
-    }
-
-    translate([-20, 0, 0])
-    screwblock(neck_width * 2 / 6, 20, 45);
-
-    // and the tailpiece.
-    up(thickness / 3) left(size * 1.1) tapered_tailpiece(
-        neck_width, neck_width / 4, neck_width / 1.5, neck_width / 6);
-
-    // The string guide over the tailpiece.
-    color("#ff00ff") translate([ -size*1.25, 0, -12 ]) rotate([ 0, 70, 0 ])
-        cuboid([ 2, neck_width * 1.2, 14 ], chamfer = 1);
-
-    // internal bracing
-    // CF rod is 1/8x3/8 - which is 3.175mmx9.525mm. Adding a bit of space
-    // so that it can be slid in, we can make a slot that's 3.5mmx10mm.
-    difference() {
-      union() {
-        down(12) color("#ff0000") prismoid([ 10, 155 ], [ 10, 120 ], 6);
-        zrot(90) down(12) fwd(100) left(6) cube([ 12, 200, 15 ]);
-      }
-      zrot(90) down(7) fwd(95) left(3.5 / 2) cube([ 3.5, 190, 10 ]);
-
-      // prismoid([ 12, 200 ], [ 10, 150 ], 15);
-      // prismoid([ 3.5, 200 ], [ 3.5, 150 ], 10);
     }
   }
+
+  assembly();
 }
 
 /*
@@ -147,7 +161,7 @@ module body(size, thickness, split = false) {
  * creating printed frets.
  */
 module neck(offset, scale, width, solid = false) {
-  length = scale - offset;
+  neck_length = scale - offset;
   thickness = width / 2;
 
   /*
@@ -178,7 +192,7 @@ module neck(offset, scale, width, solid = false) {
     union() {
       // The main trussrod slot, running the full length of the neck.
       translate([ 0, -one_eighth_inch, -20 ])
-          cube([ length + 20, one_quarter_inch, three_eighths_inch + 20 ]);
+          cube([ length, one_quarter_inch, three_eighths_inch + 20 ]);
 
       // The trussrod gets a little bit wider at the top, where the
       // screw mechanism is, so we need to broaden the cutout just
@@ -202,6 +216,7 @@ module neck(offset, scale, width, solid = false) {
       }
     }
   }
+
   module heel(radius, length, thickness, drill = true) {
     translate([ radius - 5, 0, thickness ]) difference() {
       rotate([ 180, 0, 0 ]) {
@@ -218,14 +233,14 @@ module neck(offset, scale, width, solid = false) {
               rotate([ 0, 90, 0 ]) { cylinder(70, 2.4, 2.4, $fn = 20); }
             }
             translate([ 10, 0, 8 ]) {
-              rotate([ 0, 90, 0 ]) { cylinder(30, 4, 4); }
+              rotate([ 0, 90, 0 ]) { cylinder(30, 5, 5); }
             }
 
-            translate([ -20, 0, 20 ]) {
+            translate([ -20, 0, 25 ]) {
               rotate([ 0, 90, 0 ]) { cylinder(70, 2.4, 2.4, $fn = 20); }
             }
-            translate([ 12, 0, 20 ]) {
-              rotate([ 0, 90, 0 ]) { cylinder(30, 4, 4); }
+            translate([ 12, 0, 25 ]) {
+              rotate([ 0, 90, 0 ]) { cylinder(30, 5, 5); }
             }
           }
         }
@@ -251,41 +266,59 @@ module neck(offset, scale, width, solid = false) {
         rotate([ 0, 0, 45 ]) square([ diam, diam ], center = true);
       }
     }
-    module head_shape(width, thickness) {
+
+    module shaped_head(width, thickness) {
       rotate([ 0, 0, 90 ]) {
         union() {
           back(10) left(10) down(2) mark(width / 4, 4);
           linear_extrude(thickness) {
+            // Overlapp two of the octagons.
             oct(width);
-            translate([ 0, 3 * width / 4, 0 ]) { oct(width); }
+            translate([ 0, 3 * width / 4, 0 ]) {
+              scale([ 1.0, 1.0, 1.0 ]) oct(width);
+            }
+            //            // And then add in a rectangular segment to push them
+            //            back. translate([ -width / 4, 5 * width / 4, 0 ]) {
+            //              square([ width / 1.5, 20 ]);
+            //            }
           }
         }
       }
       // for the area where the head meets the neck joint,
       // we create one half of an octagon, and hull it
       // with a cylinder
-      translate([ -width * 3 / 4, 0, 0 ]) {
-        hull() {
-          translate([ -width / 2, 0, thickness ]) rotate([ 90, 0, 0 ])
-              cylinder(width * 0.6, thickness, thickness, center = true);
+      scale([ 1.0, 1.0, 1.0 ]) translate([ -width * 3 / 4 - 20, 0, -2 ]) {
+        //         translate([0, 0, 100]) {
+        //         linear_extrude(height = thickness) {
+        //              translate([ 0, -width / 3, 0 ]) square([ width / 1.5, 20
+        //              ]);
+        //         }
+        //     }
 
-          linear_extrude(height = thickness) {
-            difference() {
-              oct(width);
-              translate([ -width * 0.2, -width / 2 ]) square([ width, width ]);
+        hull() {
+          translate([ -width / 2 + 2, 0.5, thickness ]) rotate([ 90, 0, 0 ])
+              cylinder(width * 0.68, thickness * 0.8, thickness * 0.8,
+                       center = true);
+
+          translate([ 0, 0, 0 ]) {
+            linear_extrude(height = thickness / 2) {
+              translate([ 0, -width / 5, 0 ]) square([ width / 3, 20 ]);
+              //              oct(width);
+              //              translate([ -width * 0.2, -width / 2 ]) square([
+              //              width, width ]);
             }
           }
         }
       }
     }
 
-    translate([ -95, -23, -44 ]) union() {
+    translate([ -78, -23, -38 ]) union() {
       translate([ width * 4.5, 0, thickness * 2 + 16 ]) {
         rotate([ 0, -20, 0 ]) {
           difference() {  // create the basic head shape, and then drill holes
                           // into it for the tuners. The tuners that I'm using
                           // require 10mm holes.
-            head_shape(width * 1.5, thickness / 2);
+            shaped_head(width * 1.5, thickness / 2);
             // The x=5 here is totally pragmatic:  I thought it would be
             // -width/2, but in practice, that just wasn't the right location
             // - it wasn't centered properly, but adding a 5mm translation
@@ -311,16 +344,17 @@ module neck(offset, scale, width, solid = false) {
       // First, we have main body of the neck, joined with the headstock and
       // heel.
       union() {
-        neck_blank(width, length);
-        translate([ length - 10, width / 1.8, 14 ])
-            headstock(length, width, thickness);
+        neck_blank(width, neck_length);
+
+        translate([ neck_length - 10, width / 1.8, 14 ])
+            headstock(neck_length, width, thickness);
         heel(width / 3, 50, 55, !solid);
       }
 
       if (!solid) {
         // Then we cut in the slot for the truss rod, along with a matching
         // cutout in the headstock for truss-rod access.
-        trussrod_cutout(length, width);
+        trussrod_cutout(neck_length, width);
       }
     }
   }
@@ -533,8 +567,8 @@ module tenor_guitar(size = 80, separated = false, make_body = true,
       fwd(neck_layout_offset) translate([ 0, 0, -18 ]) {
         neck(neck_offset, scale, neck_width);
       }
-      translate([ scale + 5, 0, -18 ])
-          nut(neck_width, neck_width / 9, neck_width / 5, neck_width / 9);
+      translate([ scale + 5, 0, -22 ])
+          nut(neck_width, neck_width / 8, neck_width / 5, neck_width / 9);
     }
 
     if (make_fingerboard) {
@@ -722,9 +756,9 @@ if (AUTO) {
   } else if (make_part == NECK_HEEL) {
     split_neck(neck_offset, scale, neck_width, head = false, heel = true);
   } else if (make_part == BODY_NECK) {
-    split_body(80, neck = true, tail = false);
+    split_body(100, neck = true, tail = false);
   } else if (make_part == BODY_TAIL) {
-    split_body(80, neck = false, tail = true);
+    split_body(100, neck = false, tail = true);
   } else if (make_part == FINGERBOARD_HEAD) {
     split_fingerboard(scale - neck_offset, neck_width, scale, 20, head = true,
                       heel = false);
@@ -743,5 +777,7 @@ if (AUTO) {
     tenor_guitar(100);
   }
 } else {
+  //  neck(neck_offset, scale, neck_width);
+
   split_body(100, neck = true);
 }
