@@ -205,7 +205,6 @@ module neck(offset, scale, width, solid = false) {
       translate([ length - 45 + 1, 0, -0.5 ]) {
         color("#008888") rotate([ 0, -90, 0 ])
             prismoid(size1 = [ 29, three_eighths_inch ],
-
                      size2 = [ 20, one_quarter_inch ], h = three_eighths_inch);
       }
 
