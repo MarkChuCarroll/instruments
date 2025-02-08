@@ -57,6 +57,9 @@ fun wedge(x: Float, y: Float, thickness: Float): Solid {
     triangle->extrude(v3(0.0, 0.0, thickness))
 }
 
+
+// The body.
+// The main body shape is formed from the hull of two cylinders.
 fun body(width: Float, thickness: Float): Solid {
     fun base_shape(width: Float, thickness: Float): Solid {
         (cylinder(thickness, width, width * 3.0 / 4.0)->scale(1.3, 1.0, 1.0) +
@@ -64,38 +67,40 @@ fun body(width: Float, thickness: Float): Solid {
     }
 
     fun sound_hole(): Solid {
-         cylinder(thickness, width/5.0, width/5.0)->scale(1.5, 1.0, 1.0)->move(width/3.0, -width/2.0 , -thickness/2.0)
+         cylinder(thickness, width/5.0, width/5.0)->scale(1.5, 1, 1.0)->move(width/3.0, -width/2.0 , -thickness/2.0)
     }
+
 
     fun bracing(brace_length: Float, brace_width: Float, brace_height: Float): Solid {
         let brace_slot = cuboid(brace_length, brace_width, brace_height)
-        let wrapper = brace_slot->scale(1.0, 1.5, 1.5)
+        let long_brace = brace_slot->scale(1.0, 1.5, 1.5) - brace_slot
+        let brace_cap =   wedge(brace_height*3, brace_height * 1.5, brace_width * 1.5)->rotate(-90, 180, 0)
+        let left_cap = brace_cap->move(160, - brace_width/2.0 - 1, -brace_height*0.75)
+        let right_cap = brace_cap->rotate(0, 0, 180)->move(-160, brace_width/2.0 + 1, -brace_height*0.75)
+        let capped_xbrace = (long_brace + left_cap + right_cap)->move(0.0, 0.0, -30.0)
 
-        let hb_slice = rect(brace_width, width*0.8, 1 == 1)
-        let horiz_half = hb_slice->extrude(v3(0.0, 0.0, 1.0), brace_height)
-        let horiz = horiz_half + horiz_half->mirror(v3(0.0, 0.0, 0.0), v3(0.0, 1.0, 0.0))
-
-
-        wrapper + horiz->move(-20.0, 0.0, -10.0) - brace_slot
+        let ybrace_block = cuboid(brace_width, width, brace_height)
+        let ycap = wedge(brace_height, 2.0 * brace_height, brace_width)
+        let ybrace = ybrace_block + ycap->rotate(-90.0, -90, 90)->move(-brace_width/2.0, width/2.0, brace_height/2.0) + ycap->rotate(-90, 90, 90)->move(brace_width/2.0, -width/2.0, brace_height/2.0)
+        capped_xbrace + ybrace->move(-30, 0, -thickness/2.0)
    }
 
    let shape = base_shape(width, thickness)
    let compound = shape + shape->scale(0.9, 0.9, 1.0)->move(0.0, 0.0, -thickness*0.1)
    let inner = compound->scale(0.9, 0.9, 0.9)
    let outer = compound->hull()
-   outer - inner - sound_hole() + bracing(180.0, 3.5, 10.0)->move(20.0, 0.0, 5.0)
+   outer - inner - sound_hole() + bracing(260.0, 3.5, 10.0)->move(20.0, 0.0, 5.0)
 }
 
 
 fun neck(scale: Float, offset: Float, width: Float): Solid {
     // The shape of the headstock is two overlapping octagons, plus a rectangular
     // extension to move the headstock away from the neck, plus a cylinder
-    // where the headstock meets the neck.
+    // to smooth the joint from the headstock to the neck.
     fun headstock(width: Float, thickness: Float): Solid {
         let o = oct(width*0.8)->extrude(v3(0.0, 0.0, thickness))
         let octagons = o + o->move(width * 0.70, 0.0, 0.0)
         let ext = cuboid(width, width /2.0, thickness * 0.8)
-//        let cyl = cylinder(width/2.0, width/12.0, width/12.0)->rotate(90.0, 0.0, 90.0)->move(-width, 0.0, width/24.0 + 2.0)
         let w = half(cylinder(width/4.0, width/4.0, width/4.0))->scale(1.0, 0.8, 1.0)->rotate(90.0, 90.0, 180.0)->move(-80.0, 0.0, 10.0)
         //wedge(width, width/8.0, width/2.0)->rotate(-90.0, 0.0, 190.0)->move(0.0, width/4.0, 0.0)
         octagons->move(-width/2.5, 0.0, 0.0) + (ext->move(-width/2.0, 0.0, thickness/2.0) + w)->hull()
@@ -126,7 +131,7 @@ fun neck(scale: Float, offset: Float, width: Float): Solid {
 
 
 produce("body") {
-   body(body_large_cylinder_radius, body_thickness)
+    body(body_large_cylinder_radius, body_thickness)
 }
 
 
@@ -134,5 +139,5 @@ produce("body") {
 produce("neck") {
   neck(scale_length, bridge_to_neck, neck_width)
 
-  wedge(10.0, 20.0, 30.0)->move(100.0, 100.0, 100.0)
+//  wedge(10.0, 20.0, 30.0)->move(100.0, 100.0, 100.0)
 }
