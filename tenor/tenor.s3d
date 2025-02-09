@@ -36,6 +36,24 @@ fun half(shape: Solid): Solid {
    shape - cut
 }
 
+fun hexagon(rad: Float, thickness: Float): Solid {
+    // For a hexagon, you have points at
+    // 0, 60, 120, 180, 240, 300.
+    // The y position is  radius * sin theta
+    //     x              radius * cos theta
+    // sin(60) = 1/2 = 0.5;
+    // cos(60) = sqrt(3)/2 = 0.866
+    let cs = 3.0^0.5 / 2.0
+
+    let p1 = v3(rad, 0.0, 0.0)
+    let p2 = v3(rad/2.0, rad * cs, 0.0)
+    let p3 = v3(-rad/2.0, rad * cs, 0.0)
+    let p4 = v3(-rad, 0.0, 0.0)
+    let p5 = v3(-rad/2.0, -rad * cs, 0.0)
+    let p6 = v3(rad/2.0, -rad * cs, 0.0)
+    polygon([p1, p2, p3, p4, p5, p6])->extrude(v3(0.0, 0.0, thickness))
+}
+
 // Create a flat octagon with the given radius at the points.
 fun oct(diam: Float): Polygon {
     let sqrt2 = 2.0 ^ (0.5)
@@ -124,20 +142,64 @@ fun neck(scale: Float, offset: Float, width: Float): Solid {
      let length = scale - offset
      let main =  half(cylinder(length, width/2.0, width/2.0)->scale(1.0, 0.8, 1.0))
      let head =  headstock(width*2.0, width/3.0)->rotate(70.0, 0.0, 90.0)->move(0.0, -width + 2.0, length/2.0 + width * 1.8)
-     let tail = heel(width/3.0, 50.0, 54.5)
-     main + head + tail->move(0.0, -55.0, -length/2.0) - trussrod_cutout(length)->move(0.0, -trussrod_depth / 2.0, 50.0)
+     let tail = heel(width/3.0, 50.0, 70.0)
+     main + head + tail->move(0.0, -70.0, -length/2.0) - trussrod_cutout(length)->move(0.0, -trussrod_depth / 2.0, 50.0)
+}
+
+fun peg(diam: Float, len: Float): Solid {
+    cylinder(len, diam/2.0, 0.3)->rotate(90.0, -90.0, 90.0)
 }
 
 
+fun left_side(body: Solid): Solid {
+    body  - cuboid(200.0, 400.0, 400.0)->move(100.0, 0.0, 0.0)->rotate(0.0, -45.0, 0.0) +
 
-produce("body") {
-    body(body_large_cylinder_radius, body_thickness)
+         peg(2.0, 4.0)->move(30.0, 0.0, 28.5) +
+         peg(2.0, 4.0)->move(30.0, 95.0, 28.5) +
+         peg(2.0, 4.0)->move(30.0, -95.0, 28.5) +
+         peg(2.0, 4.0)->move(-29.0, 115.0, -30.0) +
+         peg(2.0, 4.0)->move(-29.0, -115.0, -30.0) +
+         cuboid(10.0, 150.0, 2.0)->move(-30.0, 0.0, -32.0)
 }
+
+// Nutslot positions:
+// lower: 15mm above the bottom of the heel;
+// upper:  40mm
+fun nutslot(outer_size: Float, inner_size: Float, thickness: Float): Solid {
+    hexagon(4.0, 2.0)->rotate(0.0, 90.0, 0.0) + cylinder(40.0, inner_size/2.0, inner_size/2.0)->rotate(0.0, 90.0, 0.0)
+}
+
+fun right_side(b: Solid, left: Solid): Solid {
+    b - left + cuboid(20.0, 100.0, 54.0)->move(178.0, 0.0, 0.0)
+      - nutslot(4.0, 3.0, 2.0)->move(170.0, 0.0, -20.0)
+      - nutslot(4.0, 3.0, 2.0)->move(170.0, 0.0, 5.0)
+}
+
+let full_body = body(body_large_cylinder_radius, body_thickness)
+let necked_body = full_body -  neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 90.0)->move(380.0, 0.0, -50.0)
+let left = left_side(necked_body)
+let right = right_side(necked_body, left)
+
+
+produce("split-body") {
+    left->move(0, 0, 300)
+
+    right->move(0, 0, -300)
+
+}
+
+
 
 
 
 produce("neck") {
   neck(scale_length, bridge_to_neck, neck_width)
 
-//  wedge(10.0, 20.0, 30.0)->move(100.0, 100.0, 100.0)
+}
+
+
+produce("assembled") {
+    full_body + neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 90.0)->move(380.0, 0.0, -50.0)
+
+
 }
