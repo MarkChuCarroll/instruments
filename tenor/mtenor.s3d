@@ -1,8 +1,6 @@
 //
 // A short-scale tenor guitar for 3d printing.
 //
-//
-
 
 // Some convenience constants for units.
 let inch_mm = 25.4
@@ -15,7 +13,6 @@ let one_half_inch = one_eighth_inch * 4.0
 let m4_radius = 2.0
 let m4_caphead_radius = 4.0
 
-
 // Constants for the proportions of the guitar.
 
 // Body:
@@ -27,7 +24,6 @@ let body_thickness = 60.0
 // The bridge sits 4 inches down the body from the end of the neck.
 let bridge_to_neck = 4.0 * inch_mm
 
-
 // Neck sizing.
 let scale_length = 18.0 * inch_mm
 let trussrod_length = 362.0 // aka around 14 inches.
@@ -36,7 +32,6 @@ let trussrod_depth = 11.6 // approx 1/2 inch
 let neck_length = scale_length - bridge_to_neck
 let neck_width = 45.0
 
-
 // General utility function that divides a solid in half
 // along the y axis. This doesn't quite work yet.
 fun half(shape: Solid): Solid {
@@ -44,23 +39,19 @@ fun half(shape: Solid): Solid {
    let xsize = bounds->high()->x() - bounds->low()->x()
    let ysize = bounds->high()->y() - bounds->low()->y()
    let zsize = bounds->high()->z() - bounds->low()->z()
-   print(["xsize ", xsize, "\nysize ", ysize, "\nzsize", zsize])
    let cut = cuboid(xsize, ysize, zsize)->move(-xsize/2.0, 0.0, -zsize/2.0)
    shape - cut
 }
 
-
 // Create a hexagonal solid inscribed inside a circle.
 fun hexagon(rad: Float, thickness: Float): Solid {
     let cs = 3.0^0.5 / 2.0
-
     let p1 = v2(rad, 0.0)
     let p2 = v2(rad/2.0, rad * cs)
     let p3 = v2(-rad/2.0, rad * cs)
     let p4 = v2(-rad, 0.0)
     let p5 = v2(-rad/2.0, -rad * cs)
     let p6 = v2(rad/2.0, -rad * cs)
-    
     polygon_to_slice(polygon([p1, p2, p3, p4, p5, p6]))->extrude(thickness, 20)
 }
 
@@ -111,7 +102,7 @@ fun mark(size: Float, thickness: Float): Solid {
    let center_v =
        (cuboid(w/2.2, line, thickness)->move(-w/4.4, -line/2.0, 0.0) +
         cuboid(line, w/2.2, thickness)->move(-line/2.0, -w/4.4, 0.0))
-            ->rotate(0.0, 0.0, 135.0)->move(0.0, h/32.0, 0.0)->scale(1.0, 1.2, 1.0)
+            ->rotate(0.0, 0.0, -135.0)->move(0.0, h/32.0, 0.0)->scale(1.0, 1.2, 1.0)
 
    let cheight = h/3.0
    let lp = polygon_to_slice(polygon([
@@ -125,7 +116,6 @@ fun mark(size: Float, thickness: Float): Solid {
   let rc = lp->extrude(thickness, 20)->move(0.5, -cheight*0.7, -thickness/2.0)
 
   left_leg + right_leg + center_v + lc + rc
-
 }
 
 
@@ -175,7 +165,6 @@ fun body(width: Float, thickness: Float): Solid {
         hexagon(m4_caphead_radius, 8.0)->rotate(0.0, 90.0, 0.0) + cylinder(200.0, m4_radius, m4_radius)->rotate(0.0, 90.0, 0.0)->move(200.0, 0.0, 0.0)
     }
 
-
    let shape = base_shape(width, thickness)
    let compound = shape + shape->scale(0.9, 0.9, 1.0)->move(0.0, 0.0, -thickness * 0.1)
    let outer = compound->hull()
@@ -191,8 +180,6 @@ fun body(width: Float, thickness: Float): Solid {
          - nutslot(4.0, 2.0)->move(90.0, 0.0, -20.0)
          - nutslot(4.0, 2.0)->move(90.0, 0.0, -40.0)
 }
-
-
 
 // the neck of the guitar.
 fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
@@ -212,7 +199,7 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
                                    - cylinder(30.0, tuning_peg_radius)->move(width*0.25, -width*0.15, 20.0)
                                    - cylinder(30.0, tuning_peg_radius)->move(-width*0.4, width*0.15, 20.0)
                                    - cylinder(30.0, tuning_peg_radius)->move(-width*0.4, -width*0.15, 20.0) +
-                                         mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, 90.0)
+                                         mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, -90.0)
     }
 
 
@@ -248,14 +235,14 @@ fun fretboard(length: Float, width: Float): Solid {
         scale / c^fret
     }
 
-    fun fret_distaance(scale: Float, fret: Float): Float {
+    fun fret_distance(scale: Float, fret: Float): Float {
         fret_position(scale, fret-1) - fret_position(scale, fret)
     }
 
     fun fret(scale: Float, fret: Float): Solid {
         cylinder(width, 1.0, 1.0)->scale(1.0, 1.4, 1.0)
             ->rotate(90.0, 90.0, 90.0)
-            ->move(0.0, 2.5,  fret_position(scale, fret) - length/2.0 - bridge_to_neck)
+            ->move(width/2.0, 2.5,  fret_position(scale, fret) - length/2.0 - bridge_to_neck)
     }
 
 
@@ -263,29 +250,43 @@ fun fretboard(length: Float, width: Float): Solid {
         let large = cuboid(width, thickness/2.0, 1.0)
         let small = cuboid(width, thickness/4.0, 1.0)->move(0.0, -thickness/8.0, height)
         let full = large + small
-        let slot =  cylinder(thickness, 1.0, 1.0)->rotate(90.0, 0.0, 90.0)->move(0.0, 200.0, height)
+        let slot =  cylinder(thickness, 1.0, 1.0)->rotate(0.0, 90.0, 90.0)->move(0.0, 200.0, height)
         let string_sep = width / 4.0
         let edge = string_sep / 2.0
         full->hull()->move(0.0, 200.0, 0.0)
-         - slot->move(-width/2.0 + edge, 0.0, 0.0)
-         - slot->move(-width/2.0 + edge + string_sep, 0.0, 0.0)
-         - slot->move(-width/2.0 + edge + 2.0 *  string_sep, 0.0, 0.0)
-         - slot->move(-width/2.0 + edge + 3.0 *  string_sep, 0.0, 0.0)
+         - slot->move(-width/2.0 + edge, 2.0, 0.0)
+         - slot->move(-width/2.0 + edge + string_sep, 2.0, 0.0)
+         - slot->move(-width/2.0 + edge + 2.0 *  string_sep, 2.0, 0.0)
+         - slot->move(-width/2.0 + edge + 3.0 *  string_sep, 2.0, 0.0)
     }
-
 
     fun single_dot(fret: Int): Solid {
         let below = fret_position(scale_length, (fret - 1)->float())
         let above = fret_position(scale_length, fret->float())
         let pos = 0.5 * (above + below) - length/2.0 - bridge_to_neck
-        dot->move(0.0, 4.0, pos)
+        dot->move(0.0, 1.0, pos)
+    }
+
+    fun side_dot(fret: Int): Solid {
+        let below = fret_position(scale_length, (fret - 1)->float())
+        let above = fret_position(scale_length, fret->float())
+        let pos = 0.5 * (above + below) - length/2.0 - bridge_to_neck
+        cylinder(30.0, 1.75/2.0, 1.75/2.0)->rotate(0.0, -90.0, 0.0)->move(0.0, 0.0, pos)
+    }
+
+    fun double_side_dot(fret: Int): Solid {
+        let below = fret_position(scale_length, (fret - 1)->float())
+        let above = fret_position(scale_length, fret->float())
+        let pos = 0.5 * (above + below) - length/2.0 - bridge_to_neck
+        cylinder(30.0, 1.75/2.0, 1.75/2.0)->rotate(0.0, -90.0, 0.0)->move(0.0, 0.0, pos + 2) +
+        cylinder(30.0, 1.75/2.0, 1.75/2.0)->rotate(0.0, -90.0, 0.0)->move(0.0, 0.0, pos - 2)
     }
 
     fun double_dot(fret: Int): Solid {
         let below = fret_position(scale_length, (fret - 1)->float())
         let above = fret_position(scale_length, fret->float())
         let pos = 0.5 * (above + below) - length/2.0 - bridge_to_neck
-        dot->move(-6.0, 4.0, pos) + dot->move(6.0, 4.0, pos)
+        dot->move(-6.0, 1.0, pos) + dot->move(6.0, 1.0, pos)
     }
 
 
@@ -295,21 +296,26 @@ fun fretboard(length: Float, width: Float): Solid {
         // frets
         fret(scale_length, 1.0) +
         fret(scale_length, 2.0) +
-        fret(scale_length, 3.0) -
-        single_dot(3) +
+        fret(scale_length, 3.0)
+        - single_dot(3)
+        - side_dot(3) +
         fret(scale_length, 4.0) +
-        fret(scale_length, 5.0) -
-        single_dot(5) +
+        fret(scale_length, 5.0)
+        - single_dot(5)
+        - side_dot(5) +
         fret(scale_length, 6.0) +
-        fret(scale_length, 7.0) -
-        single_dot(7) +
+        fret(scale_length, 7.0)
+        - single_dot(7)
+        - side_dot(7) +
         fret(scale_length, 8.0) +
         fret(scale_length, 9.0) +
-        fret(scale_length, 10.0) -
-        single_dot(10) +
+        fret(scale_length, 10.0)
+        - single_dot(10)
+        - side_dot(10) +
         fret(scale_length, 11.0) +
-        fret(scale_length, 12.0) -
-        double_dot(12) +
+        fret(scale_length, 12.0)
+        - double_dot(12)
+        - double_side_dot(12) +
         fret(scale_length, 13.0) +
         fret(scale_length, 14.0) +
         fret(scale_length, 15.0) +
@@ -323,18 +329,15 @@ fun fretboard(length: Float, width: Float): Solid {
     board->move(0.0, 20.0, -20.0)
 }
 
-
 // generate an alignment peg for joining together split parts.
 fun peg(diam: Float, len: Float): Solid {
     cylinder(len, diam/2.0, 0.3)->rotate(90.0, 0.0, 90.0)
 }
 
-
 let full_body = body(body_large_cylinder_radius, body_thickness)
 let necked_body = full_body -
     neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(510.0, 0.0, -80.0)
-// Take the guitar body, and slice out the right hand side, keeping the left,
-// along a 45 degree line. This also adds alignment pegs and plates.
+
 let split_body_parts = necked_body->split_by_plane(v3(-1.0, 0.0, 1.0), -16.8)
 let left = split_body_parts[0] +
          peg(2.0, 4.0)->move(25.0, 0.0, -2.5) +
@@ -344,7 +347,6 @@ let left = split_body_parts[0] +
          peg(2.0, 4.0)->move(-34.0, -88.0, -60.0) +
          cuboid(10.0, 130.0, 2.0)->move(-40.0, 0.0, -64.5)
 
-
 let right = split_body_parts[1] -
          peg(2.0, 4.0)->move(25.0, 0.0, -2.5) -
          peg(2.0, 4.0)->move(25.0, 67.0, -2.5) -
@@ -353,44 +355,51 @@ let right = split_body_parts[1] -
          peg(2.0, 4.0)->move(-34.0, -88.0, -60.0) -
          cuboid(10.0, 130.0, 2.0)->move(-40.0, 0.0, -64.5)
 
-
-
-
 // If the neck is split into two pieces, it's still just a little
 // too large for my printers. So it's split into three sections.
 let full_neck = neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 90.0)
+let neck_split_a = full_neck->split_by_plane(v3(0.0, 1.0, 1.0), 200.0)
+let neck_split_b = neck_split_a[1]->split_by_plane(v3(0.0, -1.0, 1.0), -75.0)
 
-let neck_part_one = full_neck - cuboid(500.0, 500.0, 500.0)->rotate(0.0, 45.0, 0.0)->move(350.0, 0.0, 0.0)
-   + peg(3.0, 6.0)->move(14.0, 0.0, 16.0)
-   + peg(3.0, 6.0)->move(2.0, 10.0, 5.0)
-   + peg(3.0, 6.0)->move(2.0, -10.0, 5.0)
+let neck_part_one = neck_split_a[0]
+   + peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(10.0, 273.0, 5.0)
+   + peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(-10.0, 273.0, 5.0)
+   + peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(0.0, 263.0, 15.0)
 
+let neck_part_two = neck_split_b[1]
+   - peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(10.0, 273.0, 5.0)
+   - peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(-10.0, 273.0, 5.0)
+   - peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(0.0, 263.0, 15.0)
+   + peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(10.0, 107.0, 5.0)
+   + peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(-10.0, 107.0, 5.0)
+   + peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(0.0, 117.0, 15.0)
 
-let upper_neck = full_neck - neck_part_one
-
-let neck_part_two = upper_neck -
-    cuboid(500.0, 500.0, 500.0)->rotate(0.0, 45.0, 0.0)->move(-250.0, 0.0, 0.0) +
-    peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(100.0, 12.0, 3.0) +
-    peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(100.0, -12.0, 3.0) +
-    peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(90.0, 0.0, 14.0)
-
-let neck_part_three = upper_neck - neck_part_two
-
+let neck_part_three = neck_split_b[0]
+   - peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(10.0, 107.0, 5.0)
+   - peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(-10.0, 107.0, 5.0)
+   - peg(3.0, 6.0)->rotate(0.0, 0.0, -90.0)->move(0.0, 117.0, 15.0)
 
 let full_fretboard = fretboard(scale_length - bridge_to_neck, neck_width)
+let fretboard_parts = full_fretboard->split_by_plane(v3(0.0, 0.0, 1.0), 0.0)
 
-let lower_fretboard = (full_fretboard - cuboid(500.0, 500.0, 500.0)->move(0.0, 0.0, -250.0)) +
-    peg(2.0, 3.0)->rotate(0.0, -90.0, 0.0)->move(-10.0, 20.0, -1.5) +
-    peg(2.0, 3.0)->rotate(0.0, -90.0, 0.0)->move(10.0, 20.0, -1.5)
+let lower_fretboard = fretboard_parts[0] +
+    peg(2.0, 3.0)->rotate(180.0, 90.0, 0.0)->move(-10.0, 20.0, -2.5) +
+    peg(2.0, 3.0)->rotate(0.0, 90.0, 0.0)->move(10.0, 20.0, -2.5)
 
-let upper_fretboard = full_fretboard - lower_fretboard
+let upper_fretboard = fretboard_parts[1] -
+    peg(2.0, 3.0)->rotate(180.0, 90.0, 0.0)->move(-10.0, 20.0, -2.5) -
+    peg(2.0, 3.0)->rotate(0.0, 90.0, 0.0)->move(10.0, 20.0, -2.5)
 
-produce("neck") {
-    full_neck
+produce("neck-a") {
+    neck_part_one
 }
 
-produce("body") {
-    full_body
+produce("neck-b") {
+    neck_part_two
+}
+
+produce("neck-c") {
+    neck_part_three
 }
 
 produce("body-left") {
@@ -401,26 +410,14 @@ produce("body-right") {
     right
 }
 
-//produce("fretboard-lower") {
-   //lower_fretboard
-//}
-//
-//produce("fretboard-upper") {
-   //upper_fretboard
-//}
-//
 produce("assembled") {
     full_body + neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(500.0, 0.0, -80.0)
 }
-//
-produce("neck-one") {
-    neck_part_one
+
+produce("lower-fretboard") {
+    lower_fretboard
 }
 
-produce("neck-two") {
-   neck_part_two
-}
-
-produce("neck-three") {
-   neck_part_three
+produce("upper-fretboard") {
+    upper_fretboard
 }

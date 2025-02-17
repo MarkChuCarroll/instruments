@@ -368,7 +368,10 @@ let neck_part_two = upper_neck -
     peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(100.0, -12.0, 3.0) +
     peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(90.0, 0.0, 14.0)
 
-let neck_part_three = upper_neck - neck_part_two
+let neck_part_three = upper_neck - neck_part_two -
+    peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(100.0, 12.0, 3.0) -
+    peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(100.0, -12.0, 3.0) -
+    peg(3.0, 6.0)->rotate(0.0, 0.0, 180.0)->move(90.0, 0.0, 14.0)
 
 
 let full_fretboard = fretboard(scale_length - bridge_to_neck, neck_width)
