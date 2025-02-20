@@ -13,6 +13,8 @@ let one_half_inch = one_eighth_inch * 4.0
 let m4_radius = 2.0
 let m4_caphead_radius = 4.0
 
+
+
 // Constants for the proportions of the guitar.
 
 // Body:
@@ -220,6 +222,8 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
           - trussrod_cutout(length)->move(0.0, -trussrod_depth / 2.0, 50.0)
 }
 
+let notch = triangle(3.0, 4.0)->extrude(100.0, 4)->rotz(90.0)->roty(90.0)->down(2.5)
+
 fun fretboard(length: Float, width: Float): Solid {
     fun fret_position(scale: Float, fret: Float): Float {
         let c = 2.0^(1.0/12.0)
@@ -237,6 +241,7 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun nut(width: Float, height: Float, thickness: Float): Solid {
+       let sslot = notch->rotate(180.0, 0.0, 90.0)->forward(150.0)->down(10.0)
         let large = cuboid(width, thickness/2.0, 1.0)
         let small = cuboid(width, thickness/4.0, 1.0)->move(0.0, -thickness/8.0, height)
         let full = large + small
@@ -244,10 +249,10 @@ fun fretboard(length: Float, width: Float): Solid {
         let string_sep = width / 4.0
         let edge = string_sep / 2.0
         full->hull()->move(0.0, 200.0, 0.0)
-         - slot->move(-width/2.0 + edge, 2.0, 0.0)
-         - slot->move(-width/2.0 + edge + string_sep, 2.0, 0.0)
-         - slot->move(-width/2.0 + edge + 2.0 *  string_sep, 2.0, 0.0)
-         - slot->move(-width/2.0 + edge + 3.0 *  string_sep, 2.0, 0.0)
+         - sslot->move(-width/2.0 + edge, 0.0, 18.0)
+         - sslot->move(-width/2.0 + edge + string_sep, 0.0, 18.0)
+         - sslot->move(-width/2.0 + edge + 2.0 *  string_sep, 0.0, 18.0)
+         - sslot->move(-width/2.0 + edge + 3.0 *  string_sep, 0.0, 18.0)
     }
 
     fun dotpos(fret: Int): Float {
@@ -276,7 +281,7 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     let dot = cylinder(5.0, 2.0, 2.0)->rotate(90.0, 0.0, 0.0)
-          let frets = union(for f in 1->to(20) {
+    let frets = union(for f in 1->to(20) {
             fret(scale_length, f)
         })
     let board = cuboid(width, 5.0, length+10.0)
@@ -357,6 +362,7 @@ produce("body-a") {
          cuboid(10.0, 130.0, 2.0)->move(-40.0, 0.0, -64.5)
 }
 
+
 produce("body-b") {
     split_body_parts[1] -
          peg(2.0, 4.0)->move(25.0, 0.0, -2.5) -
@@ -369,4 +375,52 @@ produce("body-b") {
 
 produce("assembled") {
     full_body + neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(500.0, 0.0, -80.0)
+}
+
+
+fun prism(x: Float, y: Float, z: Float,
+    xscale: Float, yscale: Float): Solid {
+    let bottom = cuboid(x, y, 1.0)
+    let top = cuboid(xscale * x, yscale * y, 1.0)->up(z)
+    let result = (top + bottom)->hull()
+
+}
+
+fun make_bridge(width: Float, height: Float): Solid {
+    let br = prism(2.0, width, height, 3.0, 1.2)
+
+
+    let cutout = prism(4.0, width * 0.3, height * 0.8,
+         3.0, 1.4)
+
+    let support = prism(20.0, 2.0, 0.25*height,
+         0.3, 0.3)->roty(180.0)->up(height)
+
+    let offset = width / 5.0
+    let far_left = -0.5 * width
+
+    br - mark(5.0, 1.0)->rotx(-90.0)->rotz(90.0)->left(1.0)->up(5.0)
+    - cutout->up(0.3 * height)->forward(0.25 * width)
+       - cutout->up(0.3 * height)->backward(0.25 * width)+ support
+       + support->forward(0.5 * width)
+       + support->backward(0.5 * width)
+       - notch->move(-4.0, far_left + offset,  0.0)
+       - notch->move(-4.0, far_left + 2.0 * offset, 0.0)
+       - notch->move(-4.0, far_left + 3.0 * offset, 0.0)
+       - notch->move(-4.0, far_left + 4.0  * offset, 0.0)
+
+}
+
+let dot =   cylinder(2.0, 2.0, 2.0)->left(20.0)
+
+produce("bridge") {
+  make_bridge(neck_width*1.4, 30.0)->down(30.0)
+
+  dot
+  dot->forward(10.0)
+  dot->forward(20.0)
+  dot->forward(30.0)
+  dot->forward(40.0)
+  dot->forward(50.0)
+  dot->forward(60.0)
 }
