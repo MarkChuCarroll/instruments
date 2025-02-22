@@ -14,7 +14,6 @@ let m4_radius = 2.0
 let m4_caphead_radius = 4.0
 
 
-
 // Constants for the proportions of the guitar.
 
 // Body:
@@ -124,18 +123,25 @@ fun body(width: Float, thickness: Float): Solid {
     }
 
     fun bracing(brace_length: Float, brace_width: Float, brace_height: Float): Solid {
-        let brace_slot = cuboid(brace_length, brace_width, brace_height)
-        let long_brace = brace_slot->scale(1.0, 1.5, 1.5) - brace_slot
-        let brace_cap =   wedge(brace_height*3.0, brace_height * 1.5, brace_width * 1.5)->rotate(-90.0, 180.0, 0.0)
-        let left_cap = brace_cap->move(110.0, - brace_width/2.0 - 1.0, -brace_height*0.75)
-        let right_cap = brace_cap->rotate(0.0, 0.0, 180.0)->move(-110.0, brace_width/2.0 + 1.0, -brace_height*0.75)
-        let capped_xbrace = (long_brace + left_cap + right_cap)->move(0.0, 0.0, -30.0)
-        let ybrace_block = cuboid(brace_width, width, brace_height)
-        let ycap = wedge(brace_height, 2.0 * brace_height, brace_width)
-        let ybrace = ybrace_block +
-            ycap->rotate(-90.0, 90.0, -90.0)->move(-brace_width/2.0, width/2.0, brace_height/2.0) +
-            ycap->rotate(-90.0, 90.0, 90.0)->move(brace_width/2.0, -width/2.0, brace_height/2.0)
-        capped_xbrace + ybrace->move(0.0, 0.0, -thickness/2.0 - 3.0)
+        // The top has a brace running the same direction as the neck (the long brace),
+        // and a perpendicular brace running across the body (the short brace).
+        // The short brace has a slot where you can insert a carbon  fiber rod
+        // to reinforce the body for metal strings; the brace can be left out if
+        // you're using nylon strings.
+        // Each of the braces is rectangular for most of the length, ending
+        // with triangles that blend into the top at the edges.
+        let long_brace_slot = cuboid(brace_length, brace_width, brace_height)
+        let long_brace = long_brace_slot->scale(1.0, 1.5, 1.5) - long_brace_slot
+        let long_brace_cap = wedge(brace_height*3.0, brace_height * 1.5, brace_width * 1.5)->rotate(-90.0, 180.0, 0.0)
+        let left_cap = long_brace_cap->move(110.0, - brace_width/2.0 - 1.0, -brace_height*0.75)
+        let right_cap = long_brace_cap->rotate(0.0, 0.0, 180.0)->move(-110.0, brace_width/2.0 + 1.0, -brace_height*0.75)
+        let capped_long_brace = (long_brace + left_cap + right_cap)->move(0.0, 0.0, -30.0)
+        let short_brace_block = cuboid(brace_width, width, brace_height)
+        let short_brace_cap = wedge(brace_height, 2.0 * brace_height, brace_width)
+        let short_brace = short_brace_block +
+            short_brace_cap->rotate(-90.0, 90.0, -90.0)->move(-brace_width/2.0, width/2.0, brace_height/2.0) +
+            short_brace_cap->rotate(-90.0, 90.0, 90.0)->move(brace_width/2.0, -width/2.0, brace_height/2.0)
+        capped_long_brace + short_brace->move(0.0, 0.0, -thickness/2.0 - 3.0)
     }
 
     fun tailpiece(width: Float, length: Float, thickness: Float): Solid {
@@ -186,14 +192,16 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
         let o = oct(width*0.8, thickness)
         let octagons = o + o->move(width * 0.70, 0.0, 0.0)
         let ext = cuboid(width, width /2.0, thickness * 0.8)
-        let w = half(cylinder(width/4.0, width/4.0, width/4.0))->scale(0.6, 1.0, 1.0)->rotate(0.0, 90.0, 180.0)->move(-80.0, 0.0, 10.0)
+        let cylindrical_wedge = half(cylinder(width/4.0, width/4.0, width/4.0))->scale(0.6, 1.0, 1.0)->rotate(0.0, 90.0, 180.0)->move(-80.0, 0.0, 10.0)
+        let tuning_peg_hole = cylinder(30.0, tuning_peg_radius)->up(20.0)
 
-        octagons->move(-width/2.5, 0.0, 0.0) + (ext->move(-width/2.0, 0.0, thickness/2.0) + w)->hull()
-                                   - cylinder(30.0, tuning_peg_radius)->move(width*0.25, width*0.15, 20.0)
-                                   - cylinder(30.0, tuning_peg_radius)->move(width*0.25, -width*0.15, 20.0)
-                                   - cylinder(30.0, tuning_peg_radius)->move(-width*0.4, width*0.15, 20.0)
-                                   - cylinder(30.0, tuning_peg_radius)->move(-width*0.4, -width*0.15, 20.0) +
-                                         mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, -90.0)
+        octagons->move(-width/2.5, 0.0, 0.0)
+            + (ext->move(-width/2.0, 0.0, thickness/2.0) + cylindrical_wedge)->hull()
+            - tuning_peg_hole->right(width*0.25)->forward(width*0.15)
+            - tuning_peg_hole->right(width*0.25)->forward(-width*0.15)
+            - tuning_peg_hole->right(-width*0.4)->forward(width*0.15)
+            - tuning_peg_hole->right(-width*0.4)->forward(-width*0.15)
+            + mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, -90.0)
     }
 
 
@@ -411,11 +419,15 @@ fun make_bridge(width: Float, height: Float): Solid {
 
 }
 
-let dot =   cylinder(2.0, 2.0, 2.0)->left(20.0)
+
 
 produce("bridge") {
   make_bridge(neck_width*1.4, 30.0)->down(30.0)
+}
 
+let dot = cylinder(2, 2, 2)->left(20.0)
+
+produce("fretboard_dots") {
   dot
   dot->forward(10.0)
   dot->forward(20.0)
