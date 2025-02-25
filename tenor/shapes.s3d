@@ -1,0 +1,69 @@
+// Create a hexagonal solid inscribed inside a circle.
+fun hexagon(rad: Float, thickness: Float): Solid {
+    let cs = 3.0^0.5 / 2.0
+    let p1 = v2(rad, 0.0)
+    let p2 = v2(rad/2.0, rad * cs)
+    let p3 = v2(-rad/2.0, rad * cs)
+    let p4 = v2(-rad, 0.0)
+    let p5 = v2(-rad/2.0, -rad * cs)
+    let p6 = v2(rad/2.0, -rad * cs)
+    polygon_to_slice(polygon([p1, p2, p3, p4, p5, p6]))->extrude(thickness, 20)
+}
+
+// Create a flat octagon with the given radius at the points.
+fun oct(diam: Float, thickness: Float): Solid {
+    let sqrt2 = 2.0 ^ (0.5)
+    let r = diam / 2.0
+    let rsqrt = r / sqrt2
+    polygon_to_slice(polygon([v2(-rsqrt, rsqrt), v2(-r, 0.0),
+        v2(-rsqrt, -rsqrt), v2(0.0, -r),
+        v2(rsqrt, -rsqrt), v2(r, 0.0),
+        v2(rsqrt, rsqrt), v2(0.0, r)]))->extrude(thickness, 20)
+}
+
+// Create a triangular wedge.
+fun wedge(x: Float, y: Float, thickness: Float): Solid {
+    let poly = polygon([
+        v2(0.0, 0.0),
+        v2(x, 0.0),
+        v2(x,  y)])
+    let sl = polygon_to_slice(poly)
+    sl->extrude(thickness, 20)
+}
+
+// My maker's mark - a stylized line-art of "MCC".
+fun mark(size: Float, thickness: Float): Solid {
+   let w: Float = size
+   let h: Float = 6.0 * size / 5.0
+
+   let line: Float = w / 12.0
+
+   // Left leg of the M
+   let left_leg = (cuboid(line, h, thickness) +
+      cuboid(w/4.0, line, thickness)->move(w/8.0 - line/2.0, h/2.0, 0.0))->move(-w/2.0, 0.0, 0.0) +
+      (cuboid(line, h*3.0/4.0, thickness) +
+          cuboid(w/8.0, line, thickness)->move(-w/16.0 + line/2.0, -h*3.0/8.0, 0.0))
+        ->move(-w/3.5, -h*3.0/16.0, 0.0)
+    // Right leg of the M
+    let right_leg =  (cuboid(line, h, thickness) +
+      cuboid(w/4.0, line, thickness)->move(-w/8.0 + line/2.0, h/2.0, 0.0))->move(w/2.0, 0.0, 0.0) +
+      (cuboid(line, h*3.0/4.0, thickness) + cuboid(w/8.0, line, thickness)
+          ->move(w/16.0 - line/2.0, -h*3.0/8.0, 0.0))
+          ->move(w/3.5, -h*3.0/16.0, 0.0)
+    // The center V of the M
+    let center_v =
+       (cuboid(w/2.2, line, thickness)->move(-w/4.4, -line/2.0, 0.0) +
+        cuboid(line, w/2.2, thickness)->move(-line/2.0, -w/4.4, 0.0))
+            ->rotate(0.0, 0.0, -135.0)->move(0.0, h/32.0, 0.0)->scale(1.0, 1.2, 1.0)
+
+    let cheight = h/3.0
+    let lp = polygon_to_slice(polygon([
+       v2(w/6.0, cheight*0.75),
+       v2(0.0, cheight/2.0),
+       v2(0.0, -cheight/2.0),
+       v2(w/6.0, -cheight*0.75)]))
+
+    let lc = lp->extrude(thickness, 20)->move(-w/5.0, -cheight*0.7, -thickness/2.0)
+    let rc = lp->extrude(thickness, 20)->move(0.5, -cheight*0.7, -thickness/2.0)
+    left_leg + right_leg + center_v + lc + rc
+}

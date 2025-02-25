@@ -1,0 +1,10 @@
+// Some convenience constants for units.
+let inch_mm = 25.4
+let one_sixteenth_inch = 1.0 / 16.0 * inch_mm
+let one_eighth_inch = 1.0 / 8.0 * inch_mm
+let one_quarter_inch = one_eighth_inch * 2.0
+let one_half_inch = one_eighth_inch * 4.0
+
+// Standard hardware stuff
+let m4_radius = 2.0
+let m4_caphead_radius = 4.0

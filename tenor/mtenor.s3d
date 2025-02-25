@@ -2,16 +2,8 @@
 // A short-scale tenor guitar for 3d printing.
 //
 
-// Some convenience constants for units.
-let inch_mm = 25.4
-let one_sixteenth_inch = 1.0 / 16.0 * inch_mm
-let one_eighth_inch = 1.0 / 8.0 * inch_mm
-let one_quarter_inch = one_eighth_inch * 2.0
-let one_half_inch = one_eighth_inch * 4.0
-
-// Standard hardware stuff
-let m4_radius = 2.0
-let m4_caphead_radius = 4.0
+import "constants.s3d" as constants
+import "shapes.s3d" as shapes
 
 
 // Constants for the proportions of the guitar.
@@ -23,10 +15,10 @@ let body_large_cylinder_radius = 100.0
 let body_thickness = 60.0
 // Total body size is approximately 28 centimeters, or 11 inches.
 // The bridge sits 4 inches down the body from the end of the neck.
-let bridge_to_neck = 4.0 * inch_mm
+let bridge_to_neck = 4.0 * constants::inch_mm
 
 // Neck sizing.
-let scale_length = 18.0 * inch_mm
+let scale_length = 18.0 * constants::inch_mm
 let trussrod_length = 362.0 // aka around 14 inches.
 let trussrod_width = 6.0 // approx 1/4 inch
 let trussrod_depth = 11.6 // approx 1/2 inch
@@ -44,75 +36,6 @@ fun half(shape: Solid): Solid {
    shape - cut
 }
 
-// Create a hexagonal solid inscribed inside a circle.
-fun hexagon(rad: Float, thickness: Float): Solid {
-    let cs = 3.0^0.5 / 2.0
-    let p1 = v2(rad, 0.0)
-    let p2 = v2(rad/2.0, rad * cs)
-    let p3 = v2(-rad/2.0, rad * cs)
-    let p4 = v2(-rad, 0.0)
-    let p5 = v2(-rad/2.0, -rad * cs)
-    let p6 = v2(rad/2.0, -rad * cs)
-    polygon_to_slice(polygon([p1, p2, p3, p4, p5, p6]))->extrude(thickness, 20)
-}
-
-// Create a flat octagon with the given radius at the points.
-fun oct(diam: Float, thickness: Float): Solid {
-    let sqrt2 = 2.0 ^ (0.5)
-    let r = diam / 2.0
-    let rsqrt = r / sqrt2
-    polygon_to_slice(polygon([v2(-rsqrt, rsqrt), v2(-r, 0.0),
-        v2(-rsqrt, -rsqrt), v2(0.0, -r),
-        v2(rsqrt, -rsqrt), v2(r, 0.0),
-        v2(rsqrt, rsqrt), v2(0.0, r)]))->extrude(thickness, 20)
-}
-
-// Create a triangular wedge.
-fun wedge(x: Float, y: Float, thickness: Float): Solid {
-    let poly = polygon([
-        v2(0.0, 0.0),
-        v2(x, 0.0),
-        v2(x,  y)])
-    let sl = polygon_to_slice(poly)
-    sl->extrude(thickness, 20)
-}
-
-// My maker's mark - a stylized line-art of "MCC".
-fun mark(size: Float, thickness: Float): Solid {
-   let w: Float = size
-   let h: Float = 6.0 * size / 5.0
-
-   let line: Float = w / 12.0
-
-   // Left leg of the M
-   let left_leg = (cuboid(line, h, thickness) +
-      cuboid(w/4.0, line, thickness)->move(w/8.0 - line/2.0, h/2.0, 0.0))->move(-w/2.0, 0.0, 0.0) +
-      (cuboid(line, h*3.0/4.0, thickness) +
-          cuboid(w/8.0, line, thickness)->move(-w/16.0 + line/2.0, -h*3.0/8.0, 0.0))
-        ->move(-w/3.5, -h*3.0/16.0, 0.0)
-    // Right leg of the M
-    let right_leg =  (cuboid(line, h, thickness) +
-      cuboid(w/4.0, line, thickness)->move(-w/8.0 + line/2.0, h/2.0, 0.0))->move(w/2.0, 0.0, 0.0) +
-      (cuboid(line, h*3.0/4.0, thickness) + cuboid(w/8.0, line, thickness)
-          ->move(w/16.0 - line/2.0, -h*3.0/8.0, 0.0))
-          ->move(w/3.5, -h*3.0/16.0, 0.0)
-    // The center V of the M
-    let center_v =
-       (cuboid(w/2.2, line, thickness)->move(-w/4.4, -line/2.0, 0.0) +
-        cuboid(line, w/2.2, thickness)->move(-line/2.0, -w/4.4, 0.0))
-            ->rotate(0.0, 0.0, -135.0)->move(0.0, h/32.0, 0.0)->scale(1.0, 1.2, 1.0)
-
-    let cheight = h/3.0
-    let lp = polygon_to_slice(polygon([
-       v2(w/6.0, cheight*0.75),
-       v2(0.0, cheight/2.0),
-       v2(0.0, -cheight/2.0),
-       v2(w/6.0, -cheight*0.75)]))
-
-    let lc = lp->extrude(thickness, 20)->move(-w/5.0, -cheight*0.7, -thickness/2.0)
-    let rc = lp->extrude(thickness, 20)->move(0.5, -cheight*0.7, -thickness/2.0)
-    left_leg + right_leg + center_v + lc + rc
-}
 
 // The body of the guitar.
 // The main body shape is formed from the hull of two cylinders.
@@ -132,12 +55,12 @@ fun body(width: Float, thickness: Float): Solid {
         // with triangles that blend into the top at the edges.
         let long_brace_slot = cuboid(brace_length, brace_width, brace_height)
         let long_brace = long_brace_slot->scale(1.0, 1.5, 1.5) - long_brace_slot
-        let long_brace_cap = wedge(brace_height*3.0, brace_height * 1.5, brace_width * 1.5)->rotate(-90.0, 180.0, 0.0)
+        let long_brace_cap = shapes::wedge(brace_height*3.0, brace_height * 1.5, brace_width * 1.5)->rotate(-90.0, 180.0, 0.0)
         let left_cap = long_brace_cap->move(110.0, - brace_width/2.0 - 1.0, -brace_height*0.75)
         let right_cap = long_brace_cap->rotate(0.0, 0.0, 180.0)->move(-110.0, brace_width/2.0 + 1.0, -brace_height*0.75)
         let capped_long_brace = (long_brace + left_cap + right_cap)->move(0.0, 0.0, -30.0)
         let short_brace_block = cuboid(brace_width, width, brace_height)
-        let short_brace_cap = wedge(brace_height, 2.0 * brace_height, brace_width)
+        let short_brace_cap = shapes::wedge(brace_height, 2.0 * brace_height, brace_width)
         let short_brace = short_brace_block +
             short_brace_cap->rotate(-90.0, 90.0, -90.0)->move(-brace_width/2.0, width/2.0, brace_height/2.0) +
             short_brace_cap->rotate(-90.0, 90.0, 90.0)->move(brace_width/2.0, -width/2.0, brace_height/2.0)
@@ -162,7 +85,7 @@ fun body(width: Float, thickness: Float): Solid {
     // For attaching the neck, we'll be adding a screwblock. This generates the
     // screw holes and nut-slots in the screwblock for the body.
     fun nutslot(outer_size: Float, thickness: Float): Solid {
-        hexagon(m4_caphead_radius, 8.0)->rotate(0.0, 90.0, 0.0) + cylinder(200.0, m4_radius, m4_radius)->rotate(0.0, 90.0, 0.0)->move(200.0, 0.0, 0.0)
+        shapes::hexagon(constants::m4_caphead_radius, 8.0)->rotate(0.0, 90.0, 0.0) + cylinder(200.0, constants::m4_radius, constants::m4_radius)->rotate(0.0, 90.0, 0.0)->move(200.0, 0.0, 0.0)
     }
 
     let shape = base_shape(width, thickness)
@@ -189,7 +112,7 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
 
     fun make_headstock(width: Float, thickness: Float): Solid {
         let tuning_peg_radius = 5.0
-        let o = oct(width*0.8, thickness)
+        let o = shapes::oct(width*0.8, thickness)
         let octagons = o + o->move(width * 0.70, 0.0, 0.0)
         let ext = cuboid(width, width /2.0, thickness * 0.8)
         let cylindrical_wedge = half(cylinder(width/4.0, width/4.0, width/4.0))->scale(0.6, 1.0, 1.0)->rotate(0.0, 90.0, 180.0)->move(-80.0, 0.0, 10.0)
@@ -201,12 +124,12 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
             - tuning_peg_hole->right(width*0.25)->forward(-width*0.15)
             - tuning_peg_hole->right(-width*0.4)->forward(width*0.15)
             - tuning_peg_hole->right(-width*0.4)->forward(-width*0.15)
-            + mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, -90.0)
+            + shapes::mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, -90.0)
     }
 
 
     fun make_heel(radius: Float, length: Float, thickness: Float): Solid {
-        let screwhole = (cylinder(100.0, m4_radius) + cylinder(20.0, m4_caphead_radius))->rotx(-90)
+        let screwhole = (cylinder(100.0, constants::m4_radius) + cylinder(20.0, constants::m4_caphead_radius))->rotx(-90)
         let shape: Solid = cylinder(1.0, radius, radius)->move(-radius, 0.0, 0.0) +
             cuboid(radius * 2.0, radius*2.0, 1.0)
         let bridge_to_neck = length / 4.0
@@ -407,7 +330,7 @@ fun make_bridge(width: Float, height: Float): Solid {
     let offset = width / 5.0
     let far_left = -0.5 * width
 
-    br - mark(5.0, 1.0)->rotx(-90.0)->rotz(90.0)->left(1.0)->up(5.0)
+    br - shapes::mark(5.0, 1.0)->rotx(-90.0)->rotz(90.0)->left(1.0)->up(5.0)
     - cutout->up(0.3 * height)->forward(0.25 * width)
        - cutout->up(0.3 * height)->backward(0.25 * width)+ support
        + support->forward(0.5 * width)
@@ -418,7 +341,6 @@ fun make_bridge(width: Float, height: Float): Solid {
        - notch->move(-4.0, far_left + 4.0  * offset, 0.0)
 
 }
-
 
 
 produce("bridge") {
