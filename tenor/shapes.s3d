@@ -67,3 +67,10 @@ fun mark(size: Float, thickness: Float): Solid {
     let rc = lp->extrude(thickness, 20)->move(0.5, -cheight*0.7, -thickness/2.0)
     left_leg + right_leg + center_v + lc + rc
 }
+
+fun prism(x: Float, y: Float, z: Float,
+    xscale: Float, yscale: Float): Solid {
+    let bottom = cuboid(x, y, 1.0)
+    let top = cuboid(xscale * x, yscale * y, 1.0)->up(z)
+    let result = (top + bottom)->hull()
+}
