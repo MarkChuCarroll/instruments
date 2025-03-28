@@ -95,7 +95,7 @@ fun body(width: Float, thickness: Float): Solid {
     let shape = base_shape(width, thickness)
     let compound = shape + shape->scale(0.9, 0.9, 1.0)->move(0.0, 0.0, -thickness * 0.1)
     let outer = compound->hull()
-    let inner = outer->scale(0.9, 0.9, 0.9)->move(0.0, 0.0, -thickness*0.1)
+    let inner = outer->scale(0.9, 0.9, 0.9)->move(0.0, 0.0, -thickness*0.1 + 1.0)
     let sound_hole: Solid =
          cylinder(thickness, width/5.0, width/5.0)
              ->scale(1.5, 1, 1.0)
@@ -313,26 +313,59 @@ let full_body = body(body_large_cylinder_radius, body_thickness)
 let necked_body = full_body -
     neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(510.0, 0.0, -80.0)
 
+
 let split_body_parts = necked_body->split_by_plane(v3(-1.0, 0.0, 1.0), -16.8)
 
-produce("body-a") {
-    split_body_parts[0]
-        - cuboid(20.0, 3.0, 1.0)->move(24.0, 0.0, -2.5)
-        - cuboid(20.0, 3.0, 1.0)->move(25.0, 67.0, -2.5)
-        - cuboid(20.0, 3.0, 1.0)->move(25.0, -67.0, -2.5)
-        - cuboid(20.0, 3.0, 1.0)->move(-34.0, 88.0, -60.0)
-        - cuboid(20.0, 3.0, 1.0)->move(-34.0, -88.0, -60.0)
-        + cuboid(10.0, 130.0, 2.0)->move(-40.0, 0.0, -64.3)
+fun triple_split_body(body: Solid): [Solid] {
+    let tail_split = body->split_by_plane(v3(-1.0, 0.0, 1.0), 0.0)
+    let head_and_center = tail_split[1]->split_by_plane(v3(1.0, 0.0, 1.0), 20.0)
+    let tail = tail_split[0]
+        - aligner->right(10.0)->down(2.0)
+        - aligner->right(10.0)->down(2.0)->forward(72.0)
+        - aligner->right(10.0)->down(2.0)->backward(72.0)
+        - aligner->left(50.0)->forward(80.0)->down(60.0)
+        - aligner->left(50.0)->backward(80.0)->down(60.0)
+    let head = head_and_center[0]
+        - aligner->right(40.0)->down(2.0)
+        - aligner->right(40.0)->down(2.0)->forward(67.0)
+        - aligner->right(40.0)->down(2.0)->backward(67.0)
+        - aligner->right(95.0)->down(56.0)->forward(68.0)
+        - aligner->right(95.0)->down(56.0)->backward(68.0)
+
+
+    let center = head_and_center[1]
+        - aligner->right(10.0)->down(2.0)
+        - aligner->right(10.0)->down(2.0)->forward(72.0)
+        - aligner->right(10.0)->down(2.0)->backward(72.0)
+        - aligner->left(50.0)->forward(80.0)->down(60.0)
+        - aligner->left(50.0)->backward(80.0)->down(60.0)
+
+        - aligner->right(10.0)->down(2.0)
+        - aligner->right(10.0)->down(2.0)->forward(72.0)
+        - aligner->right(10.0)->down(2.0)->backward(72.0)
+        - aligner->left(50.0)->forward(80.0)->down(60.0)
+        - aligner->left(50.0)->backward(80.0)->down(60.0)
+
+        - aligner->right(40.0)->down(2.0)
+        - aligner->right(40.0)->down(2.0)->forward(67.0)
+        - aligner->right(40.0)->down(2.0)->backward(67.0)
+        - aligner->right(95.0)->down(56.0)->forward(68.0)
+        - aligner->right(95.0)->down(56.0)->backward(68.0)
+    [tail, center, head]
 }
 
-produce("body-b") {
-    split_body_parts[1]
-        - cuboid(20.0, 3.0, 1.0)->move(24.0, 0.0, -2.5)
-        - cuboid(20.0, 3.0, 1.0)->move(25.0, 67.0, -2.5)
-        - cuboid(20.0, 3.0, 1.0)->move(25.0, -67.0, -2.5)
-        - cuboid(20.0, 3.0, 1.0)->move(-34.0, 88.0, -60.0)
-        - cuboid(20.0, 3.0, 1.0)->move(-34.0, -88.0, -60.0)
-        - cuboid(10.0, 130.0, 2.0)->move(-40.0, 0.0, -64.3)
+let body_parts = triple_split_body(necked_body)
+
+produce("body-tail") {
+    body_parts[0]
+}
+
+produce("body-center") {
+    body_parts[1]
+}
+
+produce("body-neck") {
+    body_parts[2]
 }
 
 produce("assembled") {
