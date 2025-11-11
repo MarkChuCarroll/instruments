@@ -31,7 +31,7 @@ let trussrod_width = 0.25 * constants::inch_mm
 let trussrod_depth = 9.1
 
 let neck_length = scale_length - bridge_to_neck
-let neck_width = 45.0
+let neck_width = 35.0
 let tuning_peg_radius = 5.0
 
 let tuning_peg_shim = cylinder(2.0, tuning_peg_radius + 3.0, tuning_peg_radius + 3.0) -
@@ -248,7 +248,7 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
      let main =  half(cylinder(length + 20, width/2.0, width/2.0)->scale(0.7, 1.0, 1.0))
      let head =  make_headstock(width*2.0, width/3.0)
          ->rotate(0.0, -71.0, 0.0)
-         ->move(42.0, 0.0, length/4.0 -5.0)
+         ->move(35.0, 0.0, length/4.0 -15.0)
      let heel = make_heel(width/3.0, 50.0, 70.0)
      main + head + heel->rotate(90.0, 0.0, 0.0)->move(70.0, 0.0, -(length+20.0))
           - trussrod_cutout(trussrod_length)->move(0.5, -trussrod_width / 2.0, 48.0)
@@ -257,11 +257,17 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
 // Several different parts need to have notches cut into them for the strings so 
 // that they can seat the strings in the right position. The notch is shaped as 
 // a triangular prism.
-let notch = triangle(2.0, 4.0)
+let notch = triangle(1.0, 4.0)
                  ->extrude(100.0, 4)
                  ->rotz(90.0)
                  ->roty(90.0)
                  ->down(2.5)
+
+let hnotch = notch - cuboid(100.0, 2.0, 4.00)->move(50.0, 0.0, 1.0)
+
+produce("notch") {
+    hnotch
+  }
 
 
 fun fretboard(length: Float, width: Float): Solid {
@@ -282,9 +288,9 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun nut(width: Float, height: Float, thickness: Float): Solid {
-       let sslot = notch->rotate(180.0, 0.0, 90.0)
+       let sslot = hnotch->rotate(180.0, 0.0, 90.0)
                         ->forward(150.0)
-                        ->down(10.0)
+                        ->down(12.0)
         let large = cuboid(width, thickness/2.0, 1.0)
         let small = cuboid(width, thickness/4.0, 1.0)
                       ->move(0.0, -thickness/8.0, height)
