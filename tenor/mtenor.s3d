@@ -284,7 +284,7 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun nut(width: Float, height: Float, thickness: Float): Solid {
-       let sslot = notch->rotate(180.0, 0.0, 90.0)
+       let sslot = hnotch->rotate(180.0, 0.0, 90.0)
                         ->forward(150.0)
                         ->down(10.0)
         let large = cuboid(width, thickness/2.0, 1.0)
@@ -297,10 +297,10 @@ fun fretboard(length: Float, width: Float): Solid {
         let string_sep = width / 4.0
         let edge = string_sep / 2.0
         full->hull()->move(0.0, 200.0, 0.0)
-           - sslot->move(-width/2.0 + edge, 0.0, 18.0)
-           - sslot->move(-width/2.0 + edge + string_sep, 0.0, 18.0)
-           - sslot->move(-width/2.0 + edge + 2.0 *  string_sep, 0.0, 18.0)
-           - sslot->move(-width/2.0 + edge + 3.0 *  string_sep, 0.0, 18.0)
+           - sslot->move(-width/2.0 + edge, 0.0, 16.0)
+           - sslot->move(-width/2.0 + edge + string_sep, 0.0, 16.0)
+           - sslot->move(-width/2.0 + edge + 2.0 *  string_sep, 0.0, 16.0)
+           - sslot->move(-width/2.0 + edge + 3.0 *  string_sep, 0.0, 16.0)
     }
 
     // dotpos computes the position of the dot inlays along the fretboard. It 
@@ -507,10 +507,10 @@ fun make_bridge(width: Float, height: Float): Solid {
        + support
        + support->forward(0.5 * width)
        + support->backward(0.5 * width)
-       - notch->move(-4.0, far_left + offset,  0.0)
-       - notch->move(-4.0, far_left + 2.0 * offset, 0.0)
-       - notch->move(-4.0, far_left + 3.0 * offset, 0.0)
-       - notch->move(-4.0, far_left + 4.0  * offset, 0.0)
+       - hnotch->move(-4.0, far_left + offset,  2.0)
+       - hnotch->move(-4.0, far_left + 2.0 * offset, 2.0)
+       - hnotch->move(-4.0, far_left + 3.0 * offset, 2.0)
+       - hnotch->move(-4.0, far_left + 4.0  * offset, 2.0)
 }
 
 produce("bridge") {
