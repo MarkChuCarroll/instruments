@@ -12,9 +12,14 @@ import "shapes.s3d" as shapes
 //    The smaller cylinder is 2/5ths the radius of the larger.
 let body_large_cylinder_radius = 100.0
 let body_thickness = 60.0
+let body_x_stretch = 1.3 
+let body_y_stretch = 1.0 
+let body_z_stretch = 1.0
+
 // Total body size is approximately 28 centimeters, or 11 inches.
 // The bridge sits 4 inches down the body from the end of the neck.
 let bridge_to_neck = 5.0 * constants::inch_mm
+
 
 // Neck sizing.
 let scale_length = 18.0 * constants::inch_mm
@@ -27,6 +32,29 @@ let trussrod_depth = 9.1
 
 let neck_length = scale_length - bridge_to_neck
 let neck_width = 45.0
+let tuning_peg_radius = 5.0
+
+let tuning_peg_shim = cylinder(2.0, tuning_peg_radius + 3.0, tuning_peg_radius + 3.0) -
+      cylinder(2.0, tuning_peg_radius, tuning_peg_radius)
+
+produce("tuning_peg_shims") {
+    tuning_peg_shim
+
+tuning_peg_shim->move(20.0, 0.0, 0.0)
+
+tuning_peg_shim->move(40.0, 0.0, 0.0)
+
+tuning_peg_shim->move(0.0, 20.0, 0.0)
+
+tuning_peg_shim->move(20.0, 20.0, 0.0)
+
+tuning_peg_shim->move(40.0, 20.0, 0.0)
+
+
+
+
+  }
+
 
 // General utility function that divides a solid in half
 // along the y axis. This doesn't quite work yet.
@@ -41,8 +69,11 @@ fun half(shape: Solid): Solid {
 // The main body shape is formed from the hull of two cylinders.
 fun body(width: Float, thickness: Float): Solid {
     fun base_shape(width: Float, thickness: Float): Solid {
-        (cylinder(thickness, width, width * 3.0 / 4.0)->scale(1.3, 1.0, 1.0) +
-            cylinder(thickness, width/2.0, width/2.0)->move(width, 0.0, 0.0))->hull()
+        (cylinder(thickness, width, width * 3.0 / 4.0)
+             ->scale(body_x_stretch, body_y_stretch, body_z_stretch) +
+         cylinder(thickness, width/2.0, width/2.0)
+             ->move(width, 0.0, 0.0)
+        )->hull()
     }
 
     fun bracing(brace_length: Float, brace_width: Float, brace_height: Float): Solid {
@@ -53,22 +84,35 @@ fun body(width: Float, thickness: Float): Solid {
         // you're using nylon strings.
         // Each of the braces is rectangular for most of the length, ending
         // with triangles that blend into the top at the edges.
+
         let long_brace_slot = cuboid(brace_length, brace_width, brace_height)
         let long_brace = long_brace_slot->scale(1.0, 1.5, 1.5)
-        let long_brace_cap = shapes::wedge(brace_height*3.0, brace_height * 1.5, brace_width * 1.5)->rotate(-90.0, 180.0, 0.0)
-        let left_cap = long_brace_cap->move(110.0, - brace_width/2.0 - 1.0, -brace_height*0.75)
-        let right_cap = long_brace_cap->rotate(0.0, 0.0, 180.0)->move(-110.0, brace_width/2.0 + 1.0, -brace_height*0.75)
-        let capped_long_brace = (long_brace + left_cap + right_cap)->move(0.0, 0.0, -30.0)
+        let long_brace_cap = shapes::wedge(brace_height*3.0, 
+                                           brace_height * 1.5,
+                                           brace_width * 1.5)
+                                 ->rotate(-90.0, 180.0, 0.0)
+        let brace_offset = (11.0 / 16.0) * brace_length
+        let left_cap = long_brace_cap->move(brace_offset, 
+                                            -brace_width/2.0 - 1.0, 
+                                            -brace_height*0.75)
+        let right_cap = long_brace_cap
+                            ->rotate(0.0, 0.0, 180.0)
+                            ->move(-brace_offset, 
+                                   brace_width/2.0 + 1.0, 
+                                   -brace_height*0.75)
+        let capped_long_brace = (long_brace + left_cap + right_cap)
+                                    ->move(0.0, 0.0, -30.0)
         let short_brace_block = cuboid(brace_width, width, brace_height)
         let short_brace_cap = shapes::wedge(brace_height, 2.0 * brace_height, brace_width)
         let short_brace = short_brace_block +
-            short_brace_cap->rotate(-90.0, 90.0, -90.0)->move(-brace_width/2.0, width/2.0, brace_height/2.0) +
-            short_brace_cap->rotate(-90.0, 90.0, 90.0)->move(brace_width/2.0, -width/2.0, brace_height/2.0)
-        let result = capped_long_brace + short_brace->move(0.0, 0.0, -thickness/2.0 - 3.0)  - long_brace_slot->move(0.0, 0.0, -30.0)
-        let m = material("blueish")
-        m->set_color(blue)
-        result->set_material(m)
-        result
+            short_brace_cap->rotate(-90.0, 90.0, -90.0)
+                ->move(-brace_width/2.0, width/2.0, brace_height/2.0) +
+            short_brace_cap->rotate(-90.0, 90.0, 90.0)
+                ->move(brace_width/2.0, -width/2.0, brace_height/2.0)
+
+        capped_long_brace 
+          + short_brace->move(0.0, 0.0, -thickness/2.0 - 3.0) 
+          - long_brace_slot->move(0.0, 0.0, -30.0)
     }
 
     fun tailpiece(width: Float, length: Float, thickness: Float): Solid {
@@ -89,25 +133,50 @@ fun body(width: Float, thickness: Float): Solid {
     // For attaching the neck, we'll be adding a screwblock. This generates the
     // screw holes and nut-slots in the screwblock for the body.
     fun nutslot(outer_size: Float, thickness: Float): Solid {
-        shapes::hexagon(constants::m4_caphead_radius, 8.0)->rotate(0.0, 90.0, 0.0) + cylinder(200.0, constants::m4_radius, constants::m4_radius)->rotate(0.0, 90.0, 0.0)->move(200.0, 0.0, 0.0)
+        shapes::hexagon(constants::m4_caphead_radius, 8.0)
+            ->rotate(0.0, 90.0, 0.0) 
+          + cylinder(200.0, constants::m4_radius, constants::m4_radius)
+                ->rotate(0.0, 90.0, 0.0)
+                ->move(200.0, 0.0, 0.0)
     }
 
     let shape = base_shape(width, thickness)
-    let compound = shape + shape->scale(0.9, 0.9, 1.0)->move(0.0, 0.0, -thickness * 0.1)
+    let compound = shape + 
+                  shape
+                      ->scale(0.9, 0.9, 1.0)
+                      ->move(0.0, 0.0, -thickness * 0.1)
     let outer = compound->hull()
-    let inner = outer->scale(0.9, 0.9, 0.9)->move(0.0, 0.0, -thickness*0.1 + 1.0)
+    let inner = outer
+                    ->scale(0.9, 0.9, 0.9)
+                    ->move(0.0, 0.0, -thickness*0.1 + 1.0)
     let sound_hole: Solid =
          cylinder(thickness, width/5.0, width/5.0)
              ->scale(1.5, 1, 1.0)
              ->move(width/3.0, -width/2.0 , -thickness/2.0)
     let screwblock = cuboid(20.0, 70.0, 62.0)
+    let pin = cylinder(20, 1.0, 1.0)
+                  ->rotate(0.0,90.0,0.0)
+                  ->move(35.0, 0.0, -10.0)
+    let length = 25.0 
+    let guideplate = (
+            cuboid(5.0, neck_width, 15.0) 
+            - pin->move(-length*0.85, neck_width/2.0 * 0.2, 7.0)
+            - pin->move(-length*0.85, neck_width/2.0 * 0.6, 7.0)
+            - pin->move(-length*0.85, -neck_width/2.0 * 0.2, 7.0)
+            - pin->move(-length*0.85, -neck_width/2.0 * 0.6, 7.0)
+            )->rotate(0.0, 45.0, 0.0)
+             ->move(-120.0, 0.0, -65.0)
 
 
-    outer - inner - sound_hole + bracing(160.0, 3.5, 10.0)->move(-5.0, 0.0, -28.0)
-         + tailpiece(neck_width, 25.0, 10.0)->move(-width - 10.0, 0.0, -50.0)
-         + screwblock->move(105.0, 0.0, -35.0)
-         - nutslot(4.0, 2.0)->move(90.0, 0.0, -20.0)
-         - nutslot(4.0, 2.0)->move(90.0, 0.0, -40.0)
+    outer 
+      - inner 
+      - sound_hole 
+      + bracing(160.0, 3.5, 10.0)->move(-5.0, 0.0, -28.0)
+      + tailpiece(neck_width, 25.0, 10.0)->move(-width - 10.0, 0.0, -50.0)
+      + screwblock->move(105.0, 0.0, -35.0)
+      - nutslot(4.0, 2.0)->move(90.0, 0.0, -20.0)
+      - nutslot(4.0, 2.0)->move(90.0, 0.0, -40.0)
+      + guideplate
 }
 
 // the neck of the guitar.
@@ -117,11 +186,13 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
     // to smooth the joint from the headstock to the neck.
 
     fun make_headstock(width: Float, thickness: Float): Solid {
-        let tuning_peg_radius = 5.0
         let o = shapes::oct(width*0.8, thickness)
         let octagons = o + o->move(width * 0.70, 0.0, 0.0)
         let ext = cuboid(width, width /2.0, thickness * 0.8)
-        let cylindrical_wedge = half(cylinder(width/4.0, width/4.0, width/4.0))->scale(0.6, 1.0, 1.0)->rotate(0.0, 90.0, 180.0)->move(-80.0, 0.0, 10.0)
+        let cylindrical_wedge = half(cylinder(width/4.0, width/4.0, width/4.0))
+                                    ->scale(0.6, 1.0, 1.0)
+                                    ->rotate(0.0, 90.0, 180.0)
+                                    ->move(-80.0, 0.0, 10.0)
         let tuning_peg_hole = cylinder(30.0, tuning_peg_radius)->up(20.0)
 
         octagons->move(-width/2.5, 0.0, 0.0)
@@ -134,25 +205,47 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
     }
 
 
+    // For the neck heel: we want a basic shape which is a half cylinder + a rectangle.
+    //
+    //   +-------+--
+    //   |       |  \
+    //   |       |   |
+    //   |       |  /
+    //   +-------+--
+    //
+    // We want an extrusion of that shape that grows larger towards the fingerboard.
     fun make_heel(radius: Float, length: Float, thickness: Float): Solid {
-        let screwhole = (cylinder(100.0, constants::m4_radius) + cylinder(40.0, constants::m4_caphead_radius))->rotx(-90)
         let shape: Solid = cylinder(1.0, radius, radius)->move(-radius, 0.0, 0.0) +
             cuboid(radius * 2.0, radius*2.0, 1.0)
         let bridge_to_neck = length / 4.0
-        let result = (shape->scale(2.0, 1.5, 1.0)->move(-bridge_to_neck, 0.0, thickness) + shape)->hull()->rotate(90.0, 0.0, -90.0)
-        result - screwhole->move(-10.0, 40.0, 0.0) -  screwhole->move(-30.0, 60.0, 0.0)
+        let result = (shape->scale(2.0, 1.5, 1.0)
+                         ->move(-bridge_to_neck, 0.0, thickness) + shape)
+                         ->hull()
+                         ->rotate(90.0, 0.0, -90.0)
+        let screwhole = (cylinder(80.0, constants::m4_radius) 
+                        + cylinder(25.0, constants::m4_caphead_radius)
+                        )->rotx(-90)
+        result - screwhole->move(-10.0, 40.0, 0.0) 
+               - screwhole->move(-30.0, 60.0, 0.0)
     }
 
+    // the trussrod cutout is a long slot cut into the neck for (obviously) the trussrod.
+    // At the head-end of the neck, it needs to get a little wider and deeper in order 
+    // to accomodate the hardware at the top end of the rod.
     fun trussrod_cutout(length: Float): Solid {
         let main_slot = cuboid(length*1.2, trussrod_depth + 1.0, trussrod_width)
         let barrel = cuboid(trussrod_barrel_length, trussrod_barrel_depth, trussrod_barrel_width)
-            ->move((length *1.2 - trussrod_barrel_length)/2.0 - (length - trussrod_barrel_length), -(trussrod_barrel_depth - trussrod_depth)/2.0 + 1., 0.0)
-        let slot = (main_slot + barrel)->move(length/2.0 * 1.2, trussrod_depth/2.0, -trussrod_width/2.0)
+            ->move((length *1.2 - trussrod_barrel_length)/2.0 
+                     - (length - trussrod_barrel_length), 
+                   -(trussrod_barrel_depth - trussrod_depth)/2.0 + 1.0,
+                   0.0)
+        let slot = (main_slot + barrel)
+                       ->move(length/2.0 * 1.2, trussrod_depth/2.0, -trussrod_width/2.0)
         slot->rotate(0.0, 90.0, -90.0)
     }
 
      let length = scale - bridge_to_neck
-     let main =  half(cylinder(length + 20, width/2.0, width/2.0)->scale(0.8, 1.0, 1.0))
+     let main =  half(cylinder(length + 20, width/2.0, width/2.0)->scale(0.7, 1.0, 1.0))
      let head =  make_headstock(width*2.0, width/3.0)
          ->rotate(0.0, -71.0, 0.0)
          ->move(42.0, 0.0, length/4.0 -5.0)
@@ -161,7 +254,15 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
           - trussrod_cutout(trussrod_length)->move(0.5, -trussrod_width / 2.0, 48.0)
 }
 
-let notch = triangle(2.0, 4.0)->extrude(100.0, 4)->rotz(90.0)->roty(90.0)->down(2.5)
+// Several different parts need to have notches cut into them for the strings so 
+// that they can seat the strings in the right position. The notch is shaped as 
+// a triangular prism.
+let notch = triangle(2.0, 4.0)
+                 ->extrude(100.0, 4)
+                 ->rotz(90.0)
+                 ->roty(90.0)
+                 ->down(2.5)
+
 
 fun fretboard(length: Float, width: Float): Solid {
     fun fret_position(scale: Float, fret: Float): Float {
@@ -174,26 +275,34 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun fret(scale: Float, fret: Float): Solid {
-        cylinder(width, 1.0, 1.0)->scale(1.0, 1.4, 1.0)
-            ->rotate(90.0, 90.0, 90.0)
-            ->move(width/2.0, 2.5,  fret_position(scale, fret) - length/2.0 - bridge_to_neck)
+        cuboid(width, 2.0, 0.75)
+            ->move(0.0,  
+                   1.5, 
+                   fret_position(scale, fret) - length/2.0 - bridge_to_neck)
     }
 
     fun nut(width: Float, height: Float, thickness: Float): Solid {
-       let sslot = notch->rotate(180.0, 0.0, 90.0)->forward(150.0)->down(10.0)
+       let sslot = notch->rotate(180.0, 0.0, 90.0)
+                        ->forward(150.0)
+                        ->down(10.0)
         let large = cuboid(width, thickness/2.0, 1.0)
-        let small = cuboid(width, thickness/4.0, 1.0)->move(0.0, -thickness/8.0, height)
+        let small = cuboid(width, thickness/4.0, 1.0)
+                      ->move(0.0, -thickness/8.0, height)
         let full = large + small
-        let slot =  cylinder(thickness, 0.5, 0.5)->rotate(0.0, 90.0, 90.0)->move(0.0, 200.0, height)
+        let slot =  cylinder(thickness, 0.5, 0.5)
+                        ->rotate(0.0, 90.0, 90.0)
+                        ->move(0.0, 200.0, height)
         let string_sep = width / 4.0
         let edge = string_sep / 2.0
         full->hull()->move(0.0, 200.0, 0.0)
-         - sslot->move(-width/2.0 + edge, 0.0, 18.0)
-         - sslot->move(-width/2.0 + edge + string_sep, 0.0, 18.0)
-         - sslot->move(-width/2.0 + edge + 2.0 *  string_sep, 0.0, 18.0)
-         - sslot->move(-width/2.0 + edge + 3.0 *  string_sep, 0.0, 18.0)
+           - sslot->move(-width/2.0 + edge, 0.0, 18.0)
+           - sslot->move(-width/2.0 + edge + string_sep, 0.0, 18.0)
+           - sslot->move(-width/2.0 + edge + 2.0 *  string_sep, 0.0, 18.0)
+           - sslot->move(-width/2.0 + edge + 3.0 *  string_sep, 0.0, 18.0)
     }
 
+    // dotpos computes the position of the dot inlays along the fretboard. It 
+    // takes the fret number of the fret immediately after the dot.
     fun dotpos(fret: Int): Float {
         let below = fret_position(scale_length, (fret - 1)->float())
         let above = fret_position(scale_length, fret->float())
@@ -205,13 +314,19 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun side_dot(fret: Int): Solid {
-        cylinder(30.0, 1.75/2.0, 1.75/2.0)->rotate(0.0, -90.0, 0.0)->move(0.0, 0.0, dotpos(fret))
+        cylinder(30.0, 1.75/2.0, 1.75/2.0)
+            ->rotate(0.0, -90.0, 0.0)
+            ->move(0.0, 0.0, dotpos(fret))
     }
 
     fun double_side_dot(fret: Int): Solid {
         let pos = dotpos(fret)
-        cylinder(30.0, 1.75/2.0, 1.75/2.0)->rotate(0.0, -90.0, 0.0)->move(0.0, 0.0, pos + 2) +
-        cylinder(30.0, 1.75/2.0, 1.75/2.0)->rotate(0.0, -90.0, 0.0)->move(0.0, 0.0, pos - 2)
+        cylinder(30.0, 1.75/2.0, 1.75/2.0)
+            ->rotate(0.0, -90.0, 0.0)
+            ->move(0.0, 0.0, pos + 2) +
+          cylinder(30.0, 1.75/2.0, 1.75/2.0)
+              ->rotate(0.0, -90.0, 0.0)
+              ->move(0.0, 0.0, pos - 2)
     }
 
     fun double_dot(fret: Int): Solid {
@@ -225,17 +340,20 @@ fun fretboard(length: Float, width: Float): Solid {
         })
     let board = cuboid(width, 5.0, length+10.0)
         // frets
-        + frets
+        - frets
         - union(for d in [3, 5, 7, 10] {
             single_dot(d) + side_dot(d)
-        })
+          })
         - double_dot(12)
         - double_side_dot(12)
-        + nut(width, 8.0, 10.0)->rotate(90.0, 0.0, 180.0)->down(27.5)->backward(2.0)
+        + nut(width, 8.0, 10.0)
+              ->rotate(90.0, 0.0, 180.0)
+              ->down(27.5)
+              ->backward(2.0)
      board->move(0.0, 20.0, -20.0)
 }
 
-// generate an alignment slot to take a piece of 1.75mm filamen for assembly.
+// generate an alignment slot to take a piece of 1.75mm filament for assembly.
 let aligner = cylinder(20.0, 0.875, 0.875)->roty(90.0)
 
 
@@ -245,7 +363,10 @@ let full_neck = neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.
 
 let neckpeg = cylinder(4.0,  2.0, 2.0)->up(2.0)
 
-let full_fretboard = fretboard(scale_length - bridge_to_neck, neck_width)->rotx(-90.0)->rotz(-90.0)->move(325.0, 0.0, -63.0)
+let full_fretboard = fretboard(scale_length - bridge_to_neck, neck_width)
+                         ->rotx(-90.0)
+                         ->rotz(-90.0)
+                         ->move(325.0, 0.0, -63.0)
    - neckpeg->move(320.0, 10.0, -80.0)
    - neckpeg->move(320.0, -10.0, -80.0)
    - neckpeg->move(440.0, 10.0, -80.0)
@@ -253,7 +374,9 @@ let full_fretboard = fretboard(scale_length - bridge_to_neck, neck_width)->rotx(
    - neckpeg->move(200.0, 10.0, -80.0)
    - neckpeg->move(200.0, -10.0, -80.0)
 
-let pegged_neck = neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(500.0, 0.0, -80.0)
+let pegged_neck = neck(scale_length, bridge_to_neck, neck_width)
+                      ->rotate(0.0, -90.0, 180.0)
+                      ->move(500.0, 0.0, -80.0)
    - neckpeg->move(320.0, 10.0, -80.0)
    - neckpeg->move(320.0, -10.0, -80.0)
    - neckpeg->move(440.0, 10.0, -80.0)
@@ -273,25 +396,21 @@ produce("fretboard-full") {
 produce("neck-a") {
      neck_split_a[0]
      - aligner->move(405.0, 10.0, -75.0)
-     - aligner->move(395.0, 0.0, -65.0)
      - aligner->move(395.0, -10.0, -75.0)
 }
 
 produce("neck-b") {
     neck_split_b[1]
     - aligner->move(405.0, 10.0, -75.0)
-    - aligner->move(395.0, 0.0, -65.0)
     - aligner->move(395.0, -10.0, -75.0)
     - aligner->move(288.0, 10.0, -75.0)
     - aligner->move(288.0, -10.0, -75.0)
-    - aligner->move(298.0, 0.0, -65.0)
 }
 
 produce("neck-c") {
     neck_split_b[0]
     - aligner->move(288.0, 10.0, -75.0)
     - aligner->move(288.0, -10.0, -75.0)
-    - aligner->move(298.0, 0.0, -65.0)
 }
 
 
@@ -309,9 +428,11 @@ produce("fretboard-b") {
     - aligner->move(335.0, 15.0, -83.0)
 }
 
+
+
 let full_body = body(body_large_cylinder_radius, body_thickness)
 let necked_body = full_body -
-    neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(510.0, 0.0, -80.0)
+    neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(482.0, 0.0, -80.0)
 
 
 let split_body_parts = necked_body->split_by_plane(v3(-1.0, 0.0, 1.0), -16.8)
@@ -325,7 +446,14 @@ fun triple_split_body(body: Solid): [Solid] {
         - aligner->right(10.0)->down(2.0)->backward(72.0)
         - aligner->left(50.0)->forward(80.0)->down(60.0)
         - aligner->left(50.0)->backward(80.0)->down(60.0)
+        - cuboid(20.0, 100.0, 2.0)->move(0.0, 0.0, -4.0)
+        - cuboid(20.0, 30.0, 2.0)->move(-60.0, -30.0, -64.0)
+        - cuboid(20.0, 30.0, 2.0)->move(-60.0, 30.0, -64.0)
+
     let head = head_and_center[0]
+        - cuboid(20.0, 100.0, 2.0)->move(30.0, 0.0, -4.0)
+        - cuboid(20.0, 100.0, 2.0)->move(93.0, 0.0, -64.0)
+
         - aligner->right(40.0)->down(2.0)
         - aligner->right(40.0)->down(2.0)->forward(67.0)
         - aligner->right(40.0)->down(2.0)->backward(67.0)
@@ -334,6 +462,13 @@ fun triple_split_body(body: Solid): [Solid] {
 
 
     let center = head_and_center[1]
+        - cuboid(20.0, 100.0, 2.0)->move(0.0, 0.0, -4.0)
+        - cuboid(20.0, 30.0, 2.0)->move(-60.0, -30.0, -64.0)
+        - cuboid(20.0, 30.0, 2.0)->move(-60.0, 30.0, -64.0)
+
+        - cuboid(20.0, 100.0, 2.0)->move(30.0, 0.0, -4.0)
+        - cuboid(20.0, 100.0, 2.0)->move(93.0, 0.0, -64.0)
+
         - aligner->right(10.0)->down(2.0)
         - aligner->right(10.0)->down(2.0)->forward(72.0)
         - aligner->right(10.0)->down(2.0)->backward(72.0)
@@ -370,7 +505,9 @@ produce("body-neck") {
 
 produce("assembled") {
     full_body
-     + neck(scale_length, bridge_to_neck, neck_width)->rotate(0.0, -90.0, 180.0)->move(500.0, 0.0, -80.0)
+     + neck(scale_length, bridge_to_neck, neck_width)
+           ->rotate(0.0, -90.0, 180.0)
+           ->move(500.0, 0.0, -80.0)
      + full_fretboard
 
 }
@@ -384,9 +521,16 @@ fun make_bridge(width: Float, height: Float): Solid {
     let offset = width / 5.0
     let far_left = -0.5 * width
 
-    br - shapes::mark(5.0, 2.0)->rotx(-90.0)->rotz(90.0)->left(1.0)->up(5.0)
+    br - shapes::mark(5.0, 2.0)
+             ->rotx(-90.0)
+             ->rotz(90.0)
+             ->left(1.0)
+             ->up(5.0)
        - cutout->up(0.3 * height)->forward(0.25 * width)
-       - cutout->up(0.3 * height)->backward(0.25 * width)+ support
+       - cutout
+             ->up(0.3 * height)
+             ->backward(0.25 * width) 
+       + support
        + support->forward(0.5 * width)
        + support->backward(0.5 * width)
        - notch->move(-4.0, far_left + offset,  0.0)
@@ -397,6 +541,8 @@ fun make_bridge(width: Float, height: Float): Solid {
 
 produce("bridge") {
   make_bridge(neck_width*1.4, 20.0)->down(20.0)
+  make_bridge(neck_width*1.4, 19.0)->down(19.0)->left(40.0)
+  make_bridge(neck_width*1.4, 18.0)->down(18.0)->right(40.0)
 }
 
 let dot = cylinder(2, 2, 2)->left(20.0)
@@ -409,4 +555,11 @@ produce("fretboard_dots") {
   dot->forward(40.0)
   dot->forward(50.0)
   dot->forward(60.0)
+}
+
+
+produce("top-glue-support") {
+  cuboid(20.0, 100.0, 2.0)
+  cuboid(20.0, 30.0, 2.0)->move(100.0, 0.0, 0.0)
+  cuboid(20.0, 30.0, 2.0)->move(100.0, 40.0, 0.0)
 }
