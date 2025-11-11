@@ -37,24 +37,6 @@ let tuning_peg_radius = 5.0
 let tuning_peg_shim = cylinder(2.0, tuning_peg_radius + 3.0, tuning_peg_radius + 3.0) -
       cylinder(2.0, tuning_peg_radius, tuning_peg_radius)
 
-produce("tuning_peg_shims") {
-    tuning_peg_shim
-
-tuning_peg_shim->move(20.0, 0.0, 0.0)
-
-tuning_peg_shim->move(40.0, 0.0, 0.0)
-
-tuning_peg_shim->move(0.0, 20.0, 0.0)
-
-tuning_peg_shim->move(20.0, 20.0, 0.0)
-
-tuning_peg_shim->move(40.0, 20.0, 0.0)
-
-
-
-
-  }
-
 
 // General utility function that divides a solid in half
 // along the y axis. This doesn't quite work yet.
@@ -262,8 +244,8 @@ let notch = triangle(2.0, 4.0)
                  ->rotz(90.0)
                  ->roty(90.0)
                  ->down(2.5)
+            - cuboid(100.0, 2.0, 4.00)->move(50.0, 0.0, 1.0)
 
-let hnotch = notch - cuboid(100.0, 2.0, 4.00)->move(50.0, 0.0, 1.0)
 
 
 fun fretboard(length: Float, width: Float): Solid {
@@ -284,7 +266,7 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun nut(width: Float, height: Float, thickness: Float): Solid {
-       let sslot = hnotch->rotate(180.0, 0.0, 90.0)
+       let sslot = notch->rotate(180.0, 0.0, 90.0)
                         ->forward(150.0)
                         ->down(10.0)
         let large = cuboid(width, thickness/2.0, 1.0)
@@ -507,10 +489,10 @@ fun make_bridge(width: Float, height: Float): Solid {
        + support
        + support->forward(0.5 * width)
        + support->backward(0.5 * width)
-       - hnotch->move(-4.0, far_left + offset,  2.0)
-       - hnotch->move(-4.0, far_left + 2.0 * offset, 2.0)
-       - hnotch->move(-4.0, far_left + 3.0 * offset, 2.0)
-       - hnotch->move(-4.0, far_left + 4.0  * offset, 2.0)
+       - notch->move(-4.0, far_left + offset,  2.0)
+       - notch->move(-4.0, far_left + 2.0 * offset, 2.0)
+       - notch->move(-4.0, far_left + 3.0 * offset, 2.0)
+       - notch->move(-4.0, far_left + 4.0  * offset, 2.0)
 }
 
 produce("bridge") {
@@ -520,8 +502,9 @@ produce("bridge") {
 }
 
 let dot = cylinder(2, 2, 2)->left(20.0)
+let neck_aligner = cylinder(4, 2, 2)->left(20.0)
 
-produce("fretboard_dots") {
+produce("misc_bits") {
   dot
   dot->forward(10.0)
   dot->forward(20.0)
@@ -529,11 +512,32 @@ produce("fretboard_dots") {
   dot->forward(40.0)
   dot->forward(50.0)
   dot->forward(60.0)
-}
+  dot->forward(70.0)
+  dot->forward(80.0)
+  dot->forward(90.0)
+  dot->forward(100.0)
+  neck_aligner->forward(110.0)
+  neck_aligner->forward(110.0)->left(10.0)
+  neck_aligner->forward(110.0)->left(20.0)
+  neck_aligner->forward(110.0)->left(30.0)
+  neck_aligner->forward(110.0)->left(40.0)
+  neck_aligner->forward(110.0)->left(50.0)
+  neck_aligner->forward(110.0)->left(60.0)
+  neck_aligner->forward(110.0)->left(70.0)
+  neck_aligner->forward(110.0)->left(80.0)
 
+   tuning_peg_shim->right(0.0)
+   tuning_peg_shim->move(20.0, 0.0, 0.0)->right(0.0)
+   tuning_peg_shim->move(40.0, 0.0, 0.0)->right(0.0)
+   tuning_peg_shim->move(0.0, 20.0, 0.0)->right(0.0)
+   tuning_peg_shim->move(20.0, 20.0, 0.0)->right(0.0)
+   tuning_peg_shim->move(40.0, 20.0, 0.0)->right(0.0)
 
-produce("top-glue-support") {
-  cuboid(20.0, 100.0, 2.0)
-  cuboid(20.0, 30.0, 2.0)->move(100.0, 0.0, 0.0)
-  cuboid(20.0, 30.0, 2.0)->move(100.0, 40.0, 0.0)
+  cuboid(20.0, 100.0, 2.0)->left(40.0)->forward(50.0)
+  cuboid(20.0, 100.0, 2.0)->left(70.0)->forward(50.0)
+  cuboid(20.0, 100.0, 2.0)->left(100.0)->forward(50.0)
+  cuboid(20.0, 30.0, 2.0)->move(0.0, 50.0, 0.0)
+  cuboid(20.0, 30.0, 2.0)->move(40.0, 50.0, 0.0)
+  cuboid(20.0, 30.0, 2.0)->move(0.0, 90.0, 0.0)
+  cuboid(20.0, 30.0, 2.0)->move(40.0, 90.0, 0.0)
 }
