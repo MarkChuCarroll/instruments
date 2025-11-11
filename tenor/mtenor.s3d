@@ -179,10 +179,10 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
 
         octagons->move(-width/2.5, 0.0, 0.0)
             + (ext->move(-width/2.0, 0.0, thickness/2.0) + cylindrical_wedge)->hull()
-            - tuning_peg_hole->right(width*0.25)->forward(width*0.15)
-            - tuning_peg_hole->right(width*0.25)->forward(-width*0.15)
-            - tuning_peg_hole->right(-width*0.4)->forward(width*0.15)
-            - tuning_peg_hole->right(-width*0.4)->forward(-width*0.15)
+            - tuning_peg_hole->right(width*0.30)->forward(width*0.18)
+            - tuning_peg_hole->right(width*0.30)->forward(-width*0.18)
+            - tuning_peg_hole->right(-width*0.4)->forward(width*0.18)
+            - tuning_peg_hole->right(-width*0.4)->forward(-width*0.18)
             - shapes::mark(width/6.0, thickness/4.0)->move(0.0, 0.0, 15.0)->rotate(0.0, 0.0, -90.0)
     }
 
