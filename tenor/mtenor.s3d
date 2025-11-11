@@ -250,24 +250,20 @@ fun neck(scale: Float, bridge_to_neck: Float, width: Float): Solid {
          ->rotate(0.0, -71.0, 0.0)
          ->move(35.0, 0.0, length/4.0 -15.0)
      let heel = make_heel(width/3.0, 50.0, 70.0)
-     main + head + heel->rotate(90.0, 0.0, 0.0)->move(70.0, 0.0, -(length+20.0))
+     main + head + heel->rotate(90.0, 0.0, 0.0)->move(70.0, 0.0, -(length+25.0))
           - trussrod_cutout(trussrod_length)->move(0.5, -trussrod_width / 2.0, 48.0)
 }
 
 // Several different parts need to have notches cut into them for the strings so 
 // that they can seat the strings in the right position. The notch is shaped as 
 // a triangular prism.
-let notch = triangle(1.0, 4.0)
+let notch = triangle(2.0, 4.0)
                  ->extrude(100.0, 4)
                  ->rotz(90.0)
                  ->roty(90.0)
                  ->down(2.5)
 
 let hnotch = notch - cuboid(100.0, 2.0, 4.00)->move(50.0, 0.0, 1.0)
-
-produce("notch") {
-    hnotch
-  }
 
 
 fun fretboard(length: Float, width: Float): Solid {
@@ -288,9 +284,9 @@ fun fretboard(length: Float, width: Float): Solid {
     }
 
     fun nut(width: Float, height: Float, thickness: Float): Solid {
-       let sslot = hnotch->rotate(180.0, 0.0, 90.0)
+       let sslot = notch->rotate(180.0, 0.0, 90.0)
                         ->forward(150.0)
-                        ->down(12.0)
+                        ->down(10.0)
         let large = cuboid(width, thickness/2.0, 1.0)
         let small = cuboid(width, thickness/4.0, 1.0)
                       ->move(0.0, -thickness/8.0, height)
