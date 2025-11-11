@@ -443,24 +443,13 @@ fun triple_split_body(body: Solid): [Solid] {
     let tail_split = body->split_by_plane(v3(-1.0, 0.0, 1.0), 0.0)
     let head_and_center = tail_split[1]->split_by_plane(v3(1.0, 0.0, 1.0), 20.0)
     let tail = tail_split[0]
-        - aligner->right(10.0)->down(2.0)
-        - aligner->right(10.0)->down(2.0)->forward(72.0)
-        - aligner->right(10.0)->down(2.0)->backward(72.0)
-        - aligner->left(50.0)->forward(80.0)->down(60.0)
-        - aligner->left(50.0)->backward(80.0)->down(60.0)
-        - cuboid(20.0, 100.0, 2.0)->move(0.0, 0.0, -4.0)
+       - cuboid(20.0, 100.0, 2.0)->move(0.0, 0.0, -4.0)
         - cuboid(20.0, 30.0, 2.0)->move(-60.0, -30.0, -64.0)
         - cuboid(20.0, 30.0, 2.0)->move(-60.0, 30.0, -64.0)
 
     let head = head_and_center[0]
         - cuboid(20.0, 100.0, 2.0)->move(30.0, 0.0, -4.0)
         - cuboid(20.0, 100.0, 2.0)->move(93.0, 0.0, -64.0)
-
-        - aligner->right(40.0)->down(2.0)
-        - aligner->right(40.0)->down(2.0)->forward(67.0)
-        - aligner->right(40.0)->down(2.0)->backward(67.0)
-        - aligner->right(95.0)->down(56.0)->forward(68.0)
-        - aligner->right(95.0)->down(56.0)->backward(68.0)
 
 
     let center = head_and_center[1]
@@ -471,24 +460,7 @@ fun triple_split_body(body: Solid): [Solid] {
         - cuboid(20.0, 100.0, 2.0)->move(30.0, 0.0, -4.0)
         - cuboid(20.0, 100.0, 2.0)->move(93.0, 0.0, -64.0)
 
-        - aligner->right(10.0)->down(2.0)
-        - aligner->right(10.0)->down(2.0)->forward(72.0)
-        - aligner->right(10.0)->down(2.0)->backward(72.0)
-        - aligner->left(50.0)->forward(80.0)->down(60.0)
-        - aligner->left(50.0)->backward(80.0)->down(60.0)
-
-        - aligner->right(10.0)->down(2.0)
-        - aligner->right(10.0)->down(2.0)->forward(72.0)
-        - aligner->right(10.0)->down(2.0)->backward(72.0)
-        - aligner->left(50.0)->forward(80.0)->down(60.0)
-        - aligner->left(50.0)->backward(80.0)->down(60.0)
-
-        - aligner->right(40.0)->down(2.0)
-        - aligner->right(40.0)->down(2.0)->forward(67.0)
-        - aligner->right(40.0)->down(2.0)->backward(67.0)
-        - aligner->right(95.0)->down(56.0)->forward(68.0)
-        - aligner->right(95.0)->down(56.0)->backward(68.0)
-    [tail, center, head]
+   [tail, center, head]
 }
 
 let body_parts = triple_split_body(necked_body)
